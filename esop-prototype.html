@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "dash-bg": "#111111",
+          "card-border": "rgba(255,255,255,0.2)",
+          "label-gray": "#888888",
+          "tertiary-gray": "#555555",
+        },
+        fontFamily: { "sans": ["Inter", "sans-serif"] },
+        borderRadius: { "card": "16px" },
+      },
+    },
+  }
+</script>
+<style type="text/tailwindcss">
+  @layer utilities {
+    .card-style { @apply bg-transparent border border-card-border rounded-card; }
+    .text-label { @apply text-label-gray text-[11px] uppercase tracking-wider; }
+    .text-value { @apply text-white font-light; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  }
+</style>
+<style>
+  /* ── Screen Router ── */
+  .screen { display: none; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── Placeholder screen style ── */
+  .placeholder-screen {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 16px;
+    color: #555555;
+  }
+  .placeholder-screen .placeholder-icon {
+    width: 64px; height: 64px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .placeholder-screen h2 { color: #ffffff; font-size: 18px; font-weight: 500; }
+  .placeholder-screen p  { font-size: 13px; color: #555555; }
+
+  /* ── Toast notification ── */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a1a; border: 1px solid rgba(255,255,255,0.2);
+    color: #ffffff; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; z-index: 9999; opacity: 0;
+    transition: all 0.3s ease; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Sidebar active state (JS-controlled) ── */
+  .nav-link.nav-active {
+    background: white !important;
+    color: black !important;
+  }
+  .nav-link.nav-active span { color: black !important; }
+  .nav-link:not(.nav-active) { color: #888888; }
+
+  /* ── Modal overlay ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+</style>
+<title>ESOP Management Platform — Prototype</title>
+</head>
+<body class="bg-dash-bg font-sans text-white min-h-screen antialiased">
+
+<!-- ════════════════════════════════════════════
+     SHARED SIDEBAR (injected into all screens)
+     ════════════════════════════════════════════ -->
+<aside id="sidebar" class="w-[260px] fixed inset-y-0 left-0 border-r border-card-border flex flex-col z-50 bg-dash-bg">
+  <div class="p-6 h-full flex flex-col">
+    <div class="flex items-center gap-3 mb-10">
+      <div class="bg-white p-1.5 rounded-lg">
+        <span class="material-symbols-outlined text-black text-xl">account_balance_wallet</span>
+      </div>
+      <div>
+        <h1 class="text-white text-sm font-semibold leading-tight">TechFlow Inc.</h1>
+        <p id="sidebar-role-label" class="text-tertiary-gray text-xs">Founder View</p>
+      </div>
+    </div>
+    <nav class="flex flex-col gap-1.5">
+      <a class="nav-link nav-active flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer" data-screen="dashboard">
+        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+        <span class="text-sm font-medium">Dashboard</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="employees">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+        <span class="text-sm font-medium">Employees</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="grants">
+        <span class="material-symbols-outlined text-[20px]">military_tech</span>
+        <span class="text-sm font-medium">Grants</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="vesting">
+        <span class="material-symbols-outlined text-[20px]">schedule</span>
+        <span class="text-sm font-medium">Vesting</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="esop-pool">
+        <span class="material-symbols-outlined text-[20px]">pie_chart</span>
+        <span class="text-sm font-medium">ESOP Pool</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="policies">
+        <span class="material-symbols-outlined text-[20px]">policy</span>
+        <span class="text-sm font-medium">Policies</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="reports">
+        <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+        <span class="text-sm font-medium">Reports</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="audit-log">
+        <span class="material-symbols-outlined text-[20px]">history</span>
+        <span class="text-sm font-medium">Audit Log</span>
+      </a>
+    </nav>
+    <div class="mt-auto pt-6 border-t border-card-border">
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" data-screen="settings">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+        <span class="text-sm font-medium">Settings</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: DASHBOARD — FINANCE / FOUNDER VIEW
+     ════════════════════════════════════════════ -->
+<div class="screen active" id="screen-dashboard">
+  <div id="view-finance" class="flex-1 flex flex-col">
+    <main class="flex-1 ml-[260px] flex flex-col">
+      <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 sticky top-0 z-40 bg-dash-bg/95 backdrop-blur-sm">
+        <div class="flex items-center gap-6 flex-1 max-w-xl">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span>
+            <input class="w-full bg-transparent border border-card-border rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all" placeholder="Search..." type="text">
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-label-gray">Admin</span>
+          <button class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border">
+            <img alt="Profile" class="w-full h-full object-cover grayscale opacity-80 hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ">
+          </div>
+        </div>
+      </header>
+      <div class="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+        <!-- Header + view switcher -->
+        <div class="flex items-end justify-between">
+          <div class="space-y-4">
+            <div>
+              <h2 class="text-2xl font-semibold text-white">ESOP Dashboard</h2>
+              <p class="text-label-gray mt-1 text-sm">Oct 24, 2023 — TechFlow Inc. Equity Program</p>
+            </div>
+            <div class="inline-flex bg-white/5 p-1 rounded-lg border border-card-border">
+              <button onclick="switchView('finance')" id="btn-finance" class="px-4 py-1.5 rounded bg-white text-black text-xs font-medium shadow-sm">Finance View</button>
+              <button onclick="switchView('hr')" id="btn-hr" class="px-4 py-1.5 rounded text-label-gray hover:text-white text-xs font-medium transition-colors">HR View</button>
+            </div>
+          </div>
+          <button onclick="showToast('Grant creation flow coming soon')" class="bg-white hover:bg-gray-200 text-black px-5 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 shadow-lg">
+            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+            Grant New Options
+          </button>
+        </div>
+        <!-- KPI Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="card-style p-6 flex flex-col justify-between h-32">
+            <p class="text-label">Total Pool Size</p>
+            <div class="flex flex-col gap-1">
+              <span class="text-3xl text-value">1,000,000</span>
+              <span class="text-tertiary-gray text-xs">Authorized Shares</span>
+            </div>
+          </div>
+          <div class="card-style p-6 flex flex-col justify-between h-32">
+            <p class="text-label">Allocated</p>
+            <div class="flex flex-col gap-1">
+              <span class="text-3xl text-value">640,000</span>
+              <span class="text-label-gray text-xs">64% of pool</span>
+            </div>
+          </div>
+          <div class="card-style p-6 flex flex-col justify-between h-32">
+            <p class="text-label">Available</p>
+            <div class="flex flex-col gap-1">
+              <span class="text-3xl text-value">360,000</span>
+              <span class="text-label-gray text-xs">36% remaining</span>
+            </div>
+          </div>
+          <div class="card-style p-6 flex flex-col justify-between h-32">
+            <p class="text-label">Dilution</p>
+            <div class="flex flex-col gap-1">
+              <span class="text-3xl text-value">12.4%</span>
+              <span class="text-tertiary-gray text-xs">Target: &lt; 15%</span>
+            </div>
+          </div>
+        </div>
+        <!-- Pool Usage + Vesting Snapshot -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 card-style p-6">
+            <div class="flex items-center justify-between mb-8">
+              <h3 class="text-label">ESOP Pool Usage</h3>
+              <span class="material-symbols-outlined text-tertiary-gray text-sm cursor-pointer">more_horiz</span>
+            </div>
+            <div class="flex items-center gap-10">
+              <div class="relative w-40 h-40 rounded-full border-[12px] border-white/10 flex items-center justify-center shrink-0">
+                <div class="absolute inset-0 rounded-full" style="background: conic-gradient(white 0% 64%, transparent 64% 100%); opacity: 0.9; mask: radial-gradient(transparent 55%, black 56%); -webkit-mask: radial-gradient(transparent 55%, black 56%);"></div>
+                <div class="text-center">
+                  <span class="block text-2xl font-light text-white">64%</span>
+                  <span class="text-[10px] text-label-gray uppercase">Used</span>
+                </div>
+              </div>
+              <div class="flex flex-col justify-center gap-4 w-full">
+                <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                  <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-white"></div><span class="text-sm text-gray-300">Granted &amp; Vested</span></div>
+                  <span class="text-sm text-white font-medium">320,000</span>
+                </div>
+                <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                  <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-gray-500"></div><span class="text-sm text-gray-300">Granted &amp; Unvested</span></div>
+                  <span class="text-sm text-white font-medium">320,000</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-gray-800 border border-gray-600"></div><span class="text-sm text-gray-300">Available Pool</span></div>
+                  <span class="text-sm text-white font-medium">360,000</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-style p-6 flex flex-col h-full">
+            <h3 class="text-label mb-6">Vesting Snapshot</h3>
+            <div class="flex-1 flex flex-col gap-6">
+              <div>
+                <p class="text-xs text-tertiary-gray mb-1">Vesting this month</p>
+                <div class="flex items-baseline gap-2">
+                  <p class="text-2xl text-value">24,500</p>
+                  <span class="text-xs text-label-gray">shares</span>
+                </div>
+              </div>
+              <div class="border-t border-white/10 pt-4">
+                <p class="text-xs text-tertiary-gray mb-3">Upcoming Cliffs</p>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center text-sm"><span class="text-gray-300">Product Team</span><span class="font-medium text-white">Nov 01</span></div>
+                  <div class="flex justify-between items-center text-sm"><span class="text-gray-300">Engineering L4</span><span class="font-medium text-white">Nov 15</span></div>
+                </div>
+              </div>
+              <div class="mt-auto pt-4">
+                <p class="text-[11px] text-tertiary-gray italic">* Forecast indicates +12% increase in vesting volume next quarter.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Financial Overview + Alerts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card-style p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-label">Financial Overview</h3>
+              <button onclick="showToast('Full report opening...')" class="text-xs text-white underline decoration-white/30 hover:decoration-white">Full Report</button>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-8">
+              <div><p class="text-[10px] text-tertiary-gray uppercase tracking-wider mb-1">Exercise Liability</p><p class="text-xl text-white font-light">₹48L</p></div>
+              <div><p class="text-[10px] text-tertiary-gray uppercase tracking-wider mb-1">Vesting Cost (FY)</p><p class="text-xl text-white font-light">₹1.2Cr</p></div>
+              <div><p class="text-[10px] text-tertiary-gray uppercase tracking-wider mb-1">Pool Exhaustion</p><p class="text-xl text-white font-light">~14 mos</p></div>
+            </div>
+            <div class="h-24 flex items-end gap-2 mt-4">
+              <div class="w-full bg-white/5 rounded-t-sm h-[40%] hover:bg-white/10 transition-colors relative group"><div class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white bg-black px-1 rounded">Q1</div></div>
+              <div class="w-full bg-white/10 rounded-t-sm h-[60%] hover:bg-white/20 transition-colors relative group"><div class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white bg-black px-1 rounded">Q2</div></div>
+              <div class="w-full bg-white/20 rounded-t-sm h-[75%] hover:bg-white/30 transition-colors relative group"><div class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white bg-black px-1 rounded">Q3</div></div>
+              <div class="w-full bg-white/5 rounded-t-sm h-[50%] hover:bg-white/10 transition-colors relative group"><div class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white bg-black px-1 rounded">Q4</div></div>
+              <div class="w-full border border-dashed border-white/20 rounded-t-sm h-[85%] relative group"><div class="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-white bg-black px-1 rounded">Proj</div></div>
+            </div>
+            <div class="flex justify-between mt-2 text-[10px] text-tertiary-gray uppercase tracking-widest px-1">
+              <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span><span>2024</span>
+            </div>
+          </div>
+          <div class="card-style p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-label">Alerts &amp; Notifications</h3>
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse inline-block"></span>
+            </div>
+            <div class="space-y-0 divide-y divide-white/5">
+              <div class="flex items-center gap-4 py-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">3 Pending Grant Acceptance</p><p class="text-xs text-tertiary-gray">Expiring in 48 hours</p></div>
+                <button onclick="showToast('Reminder sent to 3 employees')" class="text-xs font-bold text-white border border-white/20 px-2 py-1 rounded hover:bg-white hover:text-black transition-colors">Remind</button>
+              </div>
+              <div class="flex items-center gap-4 py-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Settlement needed: J. Doe</p><p class="text-xs text-tertiary-gray">Employee exited on Oct 15</p></div>
+                <button onclick="showToast('Opening settlement workflow...')" class="text-xs font-bold text-white border border-white/20 px-2 py-1 rounded hover:bg-white hover:text-black transition-colors">Resolve</button>
+              </div>
+              <div class="flex items-center gap-4 py-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Pool Refill Required</p><p class="text-xs text-tertiary-gray">Remaining pool below 10% threshold</p></div>
+                <button onclick="navigateTo('esop-pool')" class="text-xs font-bold text-white border border-white/20 px-2 py-1 rounded hover:bg-white hover:text-black transition-colors">Plan</button>
+              </div>
+              <div class="flex items-center gap-4 py-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-800"></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-400">Quarterly Vesting Report Ready</p><p class="text-xs text-tertiary-gray">Generated 2 hrs ago</p></div>
+                <button onclick="navigateTo('reports')" class="text-xs font-bold text-label-gray hover:text-white transition-colors">View</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <button onclick="showToast('Grant creation flow coming soon')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">add_box</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">Grant New Options</span>
+          </button>
+          <button onclick="navigateTo('employees')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">person_add</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">Add Employee</span>
+          </button>
+          <button onclick="navigateTo('reports')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">description</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">Generate Report</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- HR VIEW (hidden by default) -->
+  <div id="view-hr" class="flex-1 flex-col hidden">
+    <main class="flex-1 ml-[260px] flex flex-col">
+      <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 sticky top-0 z-40 bg-dash-bg/95 backdrop-blur-sm">
+        <div class="flex items-center gap-6 flex-1 max-w-xl">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span>
+            <input class="w-full bg-transparent border border-card-border rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all" placeholder="Search employees..." type="text">
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-label-gray">HR Admin</span>
+          <button class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border">
+            <img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ">
+          </div>
+        </div>
+      </header>
+      <div class="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+        <!-- Header + view switcher -->
+        <div class="flex items-end justify-between">
+          <div class="space-y-4">
+            <div>
+              <h2 class="text-2xl font-semibold text-white">ESOP Dashboard</h2>
+              <p class="text-label-gray mt-1 text-sm">Oct 24, 2023 — TechFlow Inc. Equity Program</p>
+            </div>
+            <div class="inline-flex bg-white/5 p-1 rounded-lg border border-card-border">
+              <button onclick="switchView('finance')" class="px-4 py-1.5 rounded text-label-gray hover:text-white text-xs font-medium transition-colors">Finance View</button>
+              <button onclick="switchView('hr')" class="px-4 py-1.5 rounded bg-white text-black text-xs font-medium shadow-sm">HR View</button>
+            </div>
+          </div>
+          <button onclick="showToast('Grant creation flow coming soon')" class="bg-white hover:bg-gray-200 text-black px-5 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 shadow-lg">
+            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+            Grant New Options
+          </button>
+        </div>
+        <!-- HR KPI Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="card-style p-6 flex flex-col justify-between h-32"><p class="text-label">Total Participants</p><div class="flex flex-col gap-1"><span class="text-3xl text-value">142</span><span class="text-tertiary-gray text-xs">Employees</span></div></div>
+          <div class="card-style p-6 flex flex-col justify-between h-32"><p class="text-label">Pending Allocations</p><div class="flex flex-col gap-1"><span class="text-3xl text-value">6</span><span class="text-label-gray text-xs">Requires Action</span></div></div>
+          <div class="card-style p-6 flex flex-col justify-between h-32"><p class="text-label">Cliffs This Quarter</p><div class="flex flex-col gap-1"><span class="text-3xl text-value">8</span><span class="text-label-gray text-xs">Upcoming Vests</span></div></div>
+          <div class="card-style p-6 flex flex-col justify-between h-32"><p class="text-label">Grants Expiring Soon</p><div class="flex flex-col gap-1"><span class="text-3xl text-value">3</span><span class="text-tertiary-gray text-xs">In &lt; 30 Days</span></div></div>
+        </div>
+        <!-- Allocation Activity + Vesting Snapshot -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 card-style p-6">
+            <div class="flex items-center justify-between mb-8">
+              <h3 class="text-label">Allocation Activity</h3>
+              <span class="material-symbols-outlined text-tertiary-gray text-sm cursor-pointer">more_horiz</span>
+            </div>
+            <div class="flex items-start gap-8">
+              <div class="flex-1 space-y-6">
+                <div class="h-40 flex items-end gap-3 px-2 border-b border-white/10">
+                  <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-t-sm h-[30%]"></div>
+                  <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-t-sm h-[45%]"></div>
+                  <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-t-sm h-[25%]"></div>
+                  <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-t-sm h-[60%]"></div>
+                  <div class="w-full bg-white/10 hover:bg-white/20 transition-all rounded-t-sm h-[75%]"></div>
+                  <div class="w-full bg-white hover:bg-gray-200 transition-all rounded-t-sm h-[50%] relative group"><div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">Current</div></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-tertiary-gray uppercase tracking-widest px-2">
+                  <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+                </div>
+              </div>
+              <div class="w-48 flex flex-col gap-6 pt-2">
+                <div><p class="text-xs text-label-gray mb-1">Grants This Quarter</p><p class="text-2xl text-white font-light">18</p></div>
+                <div><p class="text-xs text-label-gray mb-1">Avg Grant Size</p><p class="text-2xl text-white font-light">5,000</p><p class="text-[10px] text-tertiary-gray mt-1">Options per employee</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-style p-6 flex flex-col h-full">
+            <h3 class="text-label mb-6">Vesting Snapshot</h3>
+            <div class="flex-1 flex flex-col gap-5">
+              <div><p class="text-xs text-tertiary-gray mb-1">Vesting this month</p><div class="flex items-baseline gap-2"><p class="text-2xl text-value">24,500</p><span class="text-xs text-label-gray">shares</span></div></div>
+              <div class="border-t border-white/10 pt-4"><p class="text-xs text-tertiary-gray mb-3">Upcoming Cliffs</p><div class="space-y-2.5"><div class="flex justify-between items-center text-sm"><span class="text-gray-300">Product Team</span><span class="font-medium text-white">Nov 01</span></div><div class="flex justify-between items-center text-sm"><span class="text-gray-300">Engineering L4</span><span class="font-medium text-white">Nov 15</span></div></div></div>
+              <div class="border-t border-white/10 pt-4"><p class="text-xs text-tertiary-gray mb-1">Forfeitures This Month</p><div class="flex items-baseline gap-2"><p class="text-xl text-white font-light">2</p><span class="text-xs text-label-gray">employees</span></div></div>
+              <div class="mt-auto pt-2"><p class="text-[11px] text-tertiary-gray italic">Next Major Vest Date: Dec 15, 2023</p></div>
+            </div>
+          </div>
+        </div>
+        <!-- Employee Status + Pending HR Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card-style p-6">
+            <div class="flex items-center justify-between mb-6"><h3 class="text-label">Employee Status Overview</h3><button onclick="navigateTo('employees')" class="text-xs text-white underline decoration-white/30 hover:decoration-white">View All</button></div>
+            <div class="grid grid-cols-2 gap-y-6 gap-x-4 mb-8">
+              <div><div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-white"></div><span class="text-xs text-tertiary-gray uppercase tracking-wider">Active</span></div><p class="text-2xl text-white font-light pl-4">128</p></div>
+              <div><div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-gray-400"></div><span class="text-xs text-tertiary-gray uppercase tracking-wider">Exited (Vested)</span></div><p class="text-2xl text-white font-light pl-4">14</p></div>
+              <div><div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-gray-600"></div><span class="text-xs text-tertiary-gray uppercase tracking-wider">Exited (Forfeited)</span></div><p class="text-2xl text-white font-light pl-4">3</p></div>
+              <div><div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-gray-800 border border-gray-700"></div><span class="text-xs text-tertiary-gray uppercase tracking-wider">Fully Vested</span></div><p class="text-2xl text-white font-light pl-4">7</p></div>
+            </div>
+            <div class="h-4 w-full flex rounded-full overflow-hidden bg-white/5">
+              <div class="h-full bg-white" style="width:84%"></div>
+              <div class="h-full bg-gray-400" style="width:9%"></div>
+              <div class="h-full bg-gray-600" style="width:2%"></div>
+              <div class="h-full bg-gray-800" style="width:5%"></div>
+            </div>
+          </div>
+          <div class="card-style p-6">
+            <div class="flex items-center justify-between mb-6"><h3 class="text-label">Pending HR Actions</h3><span class="w-2 h-2 rounded-full bg-white animate-pulse inline-block"></span></div>
+            <div class="space-y-0 divide-y divide-white/5">
+              <div class="flex items-center gap-4 py-4 group hover:bg-white/5 px-2 -mx-2 rounded transition-colors cursor-pointer" onclick="showToast('Opening ESOP allocation for 2 new joiners...')">
+                <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[16px]">person_add</span></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Allocate ESOP — 2 New Joiners</p><p class="text-xs text-tertiary-gray">Marketing Team • Joined Oct 20</p></div>
+                <span class="text-[10px] font-bold bg-white text-black px-2 py-0.5 rounded uppercase tracking-wide">Action Required</span>
+              </div>
+              <div class="flex items-center gap-4 py-4 group hover:bg-white/5 px-2 -mx-2 rounded transition-colors cursor-pointer" onclick="showToast('Opening exit processing for S. Miller...')">
+                <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[16px]">logout</span></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Process Exit — S. Miller</p><p class="text-xs text-tertiary-gray">Last working day: Oct 28</p></div>
+                <span class="text-[10px] font-bold bg-white text-black px-2 py-0.5 rounded uppercase tracking-wide">Action Required</span>
+              </div>
+              <div class="flex items-center gap-4 py-4 group hover:bg-white/5 px-2 -mx-2 rounded transition-colors cursor-pointer" onclick="showToast('Opening grant letter review queue...')">
+                <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[16px]">edit_document</span></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Review Grant Letters</p><p class="text-xs text-tertiary-gray">5 pending signature verification</p></div>
+                <span class="text-[10px] font-bold border border-white/20 text-gray-400 px-2 py-0.5 rounded uppercase tracking-wide group-hover:border-white group-hover:text-white transition-colors">Review</span>
+              </div>
+              <div class="flex items-center gap-4 py-4 group hover:bg-white/5 px-2 -mx-2 rounded transition-colors cursor-pointer" onclick="showToast('Vesting notices sent for November cycle')">
+                <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[16px]">mail</span></div>
+                <div class="flex-1"><p class="text-sm font-medium text-gray-200">Send Vesting Notices</p><p class="text-xs text-tertiary-gray">November Cycle</p></div>
+                <span class="text-[10px] font-bold border border-white/20 text-gray-400 px-2 py-0.5 rounded uppercase tracking-wide group-hover:border-white group-hover:text-white transition-colors">Send</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- HR Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <button onclick="showToast('ESOP allocation flow coming soon')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">add_task</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">Allocate ESOP</span>
+          </button>
+          <button onclick="navigateTo('employees')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">person_remove</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">View Leavers</span>
+          </button>
+          <button onclick="navigateTo('reports')" class="flex flex-col items-center justify-center gap-3 p-8 card-style hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors text-white"><span class="material-symbols-outlined text-[20px]">file_download</span></div>
+            <span class="font-medium text-sm text-gray-300 group-hover:text-white">Export Vesting Report</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div><!-- end #screen-dashboard -->
+
+
+<!-- ════════════════════════════════════════════
+     PLACEHOLDER SCREENS — Ready to replace
+     with your Stitch exports one by one
+     ════════════════════════════════════════════ -->
+
+<!-- ════════════════════════════════════════════
+     SCREEN: EMPLOYEE LIST  (Stitch export)
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-employees">
+<main class="flex-1 ml-[260px] flex flex-col h-screen overflow-hidden relative bg-dash-bg">
+<header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 bg-dash-bg shrink-0">
+<div class="flex items-center gap-6 flex-1 max-w-xl">
+<div class="relative w-full max-w-sm">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span>
+<input class="w-full bg-transparent border border-card-border rounded-full py-1.5 pl-10 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all outline-none" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-label-gray px-3 py-1 border border-card-border rounded-full"><span class="text-[10px] font-bold uppercase tracking-wider">Admin</span></div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full"></span></button>
+<div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80 hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+</div>
+</header>
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="px-8 py-6 shrink-0">
+      <div class="flex items-end justify-between mb-8">
+        <div>
+          <h2 class="text-2xl font-semibold text-white">Employees</h2>
+          <p class="text-label-gray mt-1 text-sm">142 participants across all departments</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="showToast('CSV import dialog opening...')" class="px-4 py-2 border border-card-border rounded-lg text-sm font-medium text-label-gray hover:text-white hover:border-white transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">upload_file</span>Import CSV</button>
+          <button onclick="navigateTo('employee-add')" class="px-4 py-2 bg-white rounded-lg text-sm font-medium text-black hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">add</span>Add Employee</button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-3">
+          <div class="relative"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-tertiary-gray text-[16px]">search</span><input class="bg-transparent border border-card-border rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:border-white outline-none w-64" placeholder="Search by name or ID..." type="text"/></div>
+          <div class="h-8 w-[1px] bg-card-border mx-1"></div>
+          <button class="h-8 px-3 rounded-lg border border-card-border text-sm text-label-gray bg-transparent flex items-center gap-2 hover:bg-white/5 hover:text-white transition-colors">All Departments<span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+          <button class="h-8 px-3 rounded-lg border border-card-border text-sm text-label-gray bg-transparent flex items-center gap-2 hover:bg-white/5 hover:text-white transition-colors">All Status<span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+          <button class="h-8 px-3 rounded-lg border border-card-border text-sm text-label-gray bg-transparent flex items-center gap-2 hover:bg-white/5 hover:text-white transition-colors">Vesting Stage<span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+        </div>
+        <button onclick="showToast('Exporting selected employees...')" class="text-sm font-medium text-tertiary-gray flex items-center gap-2 px-3 py-1.5"><span class="material-symbols-outlined text-[18px]">download</span>Export Selected</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto px-8 pb-20 relative">
+      <!-- Bulk action bar -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 bg-[#111] border border-white/20 rounded-lg shadow-2xl py-2 px-4 flex items-center gap-4">
+        <div class="flex items-center gap-2 border-r border-white/20 pr-4"><div class="w-4 h-4 bg-white rounded flex items-center justify-center"><span class="material-symbols-outlined text-black text-[12px]">remove</span></div><span class="text-white text-sm font-medium">2 selected</span></div>
+        <button onclick="showToast('Allocate grant flow opening...')" class="text-sm text-gray-300 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors">Allocate Grant</button>
+        <button onclick="showToast('Exporting selected...')" class="text-sm text-gray-300 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors">Export</button>
+        <button onclick="showToast('Status update dialog opening...')" class="text-sm text-gray-300 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors">Update Status</button>
+      </div>
+      <table class="w-full text-left border-collapse">
+        <thead class="sticky top-0 bg-dash-bg z-10">
+          <tr>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-left border-b border-white/10 w-10"><input class="rounded border-card-border bg-transparent w-4 h-4" type="checkbox"/></th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-left border-b border-white/10">Employee</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-left border-b border-white/10">Department</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-right border-b border-white/10">Total Granted</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-right border-b border-white/10">Vested</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-right border-b border-white/10">Unvested</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-center border-b border-white/10">Status</th>
+            <th class="py-3 px-4 text-[11px] uppercase tracking-wider text-label-gray font-medium text-right border-b border-white/10">Last Updated</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <!-- Row — Ananya Sharma (clickable → detail) -->
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">AS</div><div><div class="text-sm text-white">Ananya Sharma</div><div class="text-[11px] text-tertiary-gray">ID: EMP-1024</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Engineering</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">10,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">6,250</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">3,750</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Oct 12, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">RM</div><div><div class="text-sm text-white">Rahul Mehta</div><div class="text-[11px] text-tertiary-gray">ID: EMP-1029</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Product</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">8,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">2,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">6,000</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Oct 10, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">PN</div><div><div class="text-sm text-white">Priya Nair</div><div class="text-[11px] text-tertiary-gray">ID: EMP-0941</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Marketing</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">5,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">5,000</td>
+            <td class="py-3 px-4 text-sm text-right text-tertiary-gray border-b border-white/5">—</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-gray-600 text-gray-400">Fully Vested</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Sep 28, 2023</td>
+          </tr>
+          <tr class="group bg-white/[0.03] cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input checked class="rounded border-card-border bg-transparent w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">VD</div><div><div class="text-sm text-white">Vikram Das</div><div class="text-[11px] text-tertiary-gray">ID: EMP-0888</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Engineering</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">12,500</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">4,166</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">8,334</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Sep 25, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">SK</div><div><div class="text-sm text-white">Sarah Khan</div><div class="text-[11px] text-tertiary-gray">ID: EMP-1100</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Sales</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">4,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">1,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">3,000</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Sep 22, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">AJ</div><div><div class="text-sm text-white">Arjun Joshi</div><div class="text-[11px] text-tertiary-gray">ID: EMP-0999</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Design</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">6,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">3,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">3,000</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Sep 15, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm border-b border-white/5"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm border-b border-white/5"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">ML</div><div><div class="text-sm text-white">Mei Lin</div><div class="text-[11px] text-tertiary-gray">ID: EMP-1050</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300 border-b border-white/5">Operations</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white border-b border-white/5">3,500</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">1,750</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400 border-b border-white/5">1,750</td>
+            <td class="py-3 px-4 text-sm text-center border-b border-white/5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white/30 text-white">Active</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray border-b border-white/5">Sep 10, 2023</td>
+          </tr>
+          <tr class="group hover:bg-white/[0.03] transition-colors cursor-pointer" onclick="openEmployeeDetail()">
+            <td class="py-3 px-4 text-sm"><input class="rounded border-card-border bg-transparent w-4 h-4 opacity-30 group-hover:opacity-100" type="checkbox" onclick="event.stopPropagation()"/></td>
+            <td class="py-3 px-4 text-sm"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold">DR</div><div><div class="text-sm text-white">David Ross</div><div class="text-[11px] text-tertiary-gray">ID: EMP-0800</div></div></div></td>
+            <td class="py-3 px-4 text-sm text-gray-300">Finance</td>
+            <td class="py-3 px-4 text-sm text-right font-medium text-white">15,000</td>
+            <td class="py-3 px-4 text-sm text-right text-gray-400">15,000</td>
+            <td class="py-3 px-4 text-sm text-right text-tertiary-gray">—</td>
+            <td class="py-3 px-4 text-sm text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-gray-600 text-gray-400">Fully Vested</span></td>
+            <td class="py-3 px-4 text-xs text-right text-tertiary-gray">Aug 30, 2023</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="border-t border-card-border px-8 py-4 flex items-center justify-between bg-dash-bg z-10 shrink-0">
+      <p class="text-xs text-label-gray">Showing <span class="text-white font-medium">1–8</span> of <span class="text-white font-medium">142</span> employees</p>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 border border-card-border rounded text-xs text-label-gray opacity-50 cursor-not-allowed">Previous</button>
+        <button class="px-3 py-1.5 border border-card-border rounded text-xs text-white hover:bg-white/10 transition-colors">Next</button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: EMPLOYEE DETAIL (tabbed)
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-employee-detail">
+<main class="flex-1 ml-[260px] flex flex-col h-screen overflow-hidden bg-dash-bg">
+  <!-- Shared detail header -->
+  <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 bg-dash-bg shrink-0">
+    <div class="flex items-center gap-2 text-[12px] text-label-gray">
+      <span class="hover:text-white cursor-pointer transition-colors" onclick="navigateTo('employees')">Employees</span>
+      <span class="material-symbols-outlined text-[12px]">chevron_right</span>
+      <span class="text-white">Ananya Sharma</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2 text-label-gray px-3 py-1 border border-card-border rounded-full"><span class="text-[10px] font-bold uppercase tracking-wider">Admin</span></div>
+      <button class="w-8 h-8 flex items-center justify-center rounded-full text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full"></span></button>
+      <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+    </div>
+  </header>
+  <div class="flex-1 overflow-y-auto px-8 py-8">
+    <!-- Employee profile header -->
+    <div class="flex items-start justify-between mb-8">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-xl text-white font-bold border border-card-border">AS</div>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-semibold text-white">Ananya Sharma</h1>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white text-white">Active</span>
+          </div>
+          <p class="text-label-gray mt-1 text-sm">Senior Engineer · Engineering · Employee ID: EMP-0042</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="showToast('Opening edit employee form...')" class="px-4 py-2 border border-card-border rounded-lg text-sm font-medium text-label-gray hover:text-white hover:border-white transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">edit</span>Edit Employee</button>
+        <button onclick="showToast('New grant flow opening...')" class="px-4 py-2 bg-white rounded-lg text-sm font-medium text-black hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">add</span>New Grant</button>
+      </div>
+    </div>
+    <!-- Tab bar -->
+    <div class="flex gap-6 border-b border-card-border mb-8">
+      <div id="emp-tab-btn-overview" class="px-1 pb-3 text-sm font-medium border-b-2 border-white text-white cursor-pointer" onclick="switchEmployeeTab('overview')">Overview</div>
+      <div id="emp-tab-btn-grants" class="px-1 pb-3 text-sm font-medium border-b-2 border-transparent text-label-gray hover:text-white transition-colors cursor-pointer" onclick="switchEmployeeTab('grants')">Grants</div>
+      <div id="emp-tab-btn-vesting" class="px-1 pb-3 text-sm font-medium border-b-2 border-transparent text-label-gray hover:text-white transition-colors cursor-pointer" onclick="switchEmployeeTab('vesting')">Vesting</div>
+      <div id="emp-tab-btn-exercise" class="px-1 pb-3 text-sm font-medium border-b-2 border-transparent text-label-gray hover:text-white transition-colors cursor-pointer" onclick="switchEmployeeTab('exercise')">Exercise</div>
+      <div id="emp-tab-btn-policy" class="px-1 pb-3 text-sm font-medium border-b-2 border-transparent text-label-gray hover:text-white transition-colors cursor-pointer" onclick="switchEmployeeTab('policy')">Policy</div>
+    </div>
+
+    <!-- ── TAB: OVERVIEW ── -->
+    <div id="emp-tab-overview">
+      <div class="grid grid-cols-3 gap-6">
+        <div class="col-span-1 flex flex-col gap-6">
+          <div class="bg-transparent border border-card-border rounded-card p-6">
+            <h3 class="text-sm font-semibold text-white mb-4">Profile Details</h3>
+            <div class="flex flex-col">
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Full Name</span><span class="text-white font-medium text-xs">Ananya Sharma</span></div>
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Email</span><span class="text-white font-medium text-xs">ananya@techflow.inc</span></div>
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Department</span><span class="text-white font-medium text-xs">Engineering</span></div>
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Role</span><span class="text-white font-medium text-xs">Senior Engineer</span></div>
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Joined Date</span><span class="text-white font-medium text-xs">Oct 12, 2021</span></div>
+              <div class="flex justify-between py-3 border-b border-white/5"><span class="text-label-gray text-xs">Employment Type</span><span class="text-white font-medium text-xs">Full Time</span></div>
+              <div class="flex justify-between py-3"><span class="text-label-gray text-xs">Tax Residence</span><span class="text-white font-medium text-xs">India</span></div>
+            </div>
+          </div>
+          <div class="bg-transparent border border-card-border rounded-card p-6">
+            <h3 class="text-sm font-semibold text-white mb-4">Grant History</h3>
+            <div class="space-y-4">
+              <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-card-border"><span class="material-symbols-outlined text-gray-400 text-xs">military_tech</span></div><div class="flex-1"><div class="text-white text-xs font-medium">ESOP Grant #G-102</div><div class="text-label-gray text-[10px]">Issued Oct 12, 2021</div></div><div class="text-white text-xs font-medium">8,000</div></div>
+              <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-card-border"><span class="material-symbols-outlined text-gray-400 text-xs">military_tech</span></div><div class="flex-1"><div class="text-white text-xs font-medium">Refresh Grant #G-156</div><div class="text-label-gray text-[10px]">Issued Jan 01, 2023</div></div><div class="text-white text-xs font-medium">2,000</div></div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/5 text-center"><button onclick="switchEmployeeTab('grants')" class="text-xs text-label-gray hover:text-white transition-colors">View All Grants</button></div>
+          </div>
+        </div>
+        <div class="col-span-2 flex flex-col gap-6">
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-transparent border border-card-border rounded-card p-4 flex flex-col justify-between h-[100px]"><div class="text-label-gray text-[11px] uppercase tracking-wider font-semibold">Total Granted</div><div class="text-2xl font-medium text-white">10,000</div><div class="text-[10px] text-label-gray">Options</div></div>
+            <div class="bg-transparent border border-card-border rounded-card p-4 flex flex-col justify-between h-[100px]"><div class="text-label-gray text-[11px] uppercase tracking-wider font-semibold">Vested</div><div class="text-2xl font-medium text-white">6,250</div><div class="text-[10px] text-label-gray">62.5%</div></div>
+            <div class="bg-transparent border border-card-border rounded-card p-4 flex flex-col justify-between h-[100px]"><div class="text-label-gray text-[11px] uppercase tracking-wider font-semibold">Unvested</div><div class="text-2xl font-medium text-gray-400">3,750</div><div class="text-[10px] text-label-gray">Remaining</div></div>
+            <div class="bg-transparent border border-card-border rounded-card p-4 flex flex-col justify-between h-[100px]"><div class="text-label-gray text-[11px] uppercase tracking-wider font-semibold">Exercised</div><div class="text-2xl font-medium text-tertiary-gray">0</div><div class="text-[10px] text-label-gray">—</div></div>
+          </div>
+          <div class="bg-transparent border border-card-border rounded-card p-6">
+            <div class="flex items-center justify-between mb-6"><h3 class="text-sm font-semibold text-white">Vesting Progress</h3><span class="text-xs text-label-gray">Next Vesting: Oct 12, 2023 (Monthly)</span></div>
+            <div class="relative pt-2 pb-6">
+              <div class="h-4 bg-white/10 rounded-full overflow-hidden w-full flex"><div class="h-full bg-white w-[62.5%]"></div></div>
+              <div class="flex justify-between mt-3 text-xs"><div><span class="text-white font-medium">6,250</span><span class="text-label-gray ml-1">Vested</span></div><div class="text-right"><span class="text-white font-medium">3,750</span><span class="text-label-gray ml-1">Unvested</span></div></div>
+              <div class="flex justify-between mt-1 text-[10px] text-tertiary-gray font-mono uppercase tracking-wider"><div>Start</div><div>Year 1</div><div>Year 2</div><div>Year 3</div><div>Year 4</div></div>
+            </div>
+          </div>
+          <div class="bg-transparent border border-card-border rounded-card p-6">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 class="text-sm font-semibold text-white mb-1">Exercise Eligibility</h3>
+                <p class="text-xs text-green-400 flex items-center gap-1.5 mb-4"><span class="material-symbols-outlined text-sm">check_circle</span>Currently Eligible to Exercise</p>
+                <div class="flex gap-12">
+                  <div><div class="text-label-gray text-[10px] uppercase tracking-wider mb-1">Exercise Price</div><div class="text-xl font-medium text-white">₹10.00</div></div>
+                  <div><div class="text-label-gray text-[10px] uppercase tracking-wider mb-1">Current FMV</div><div class="text-xl font-medium text-white">₹42.00</div></div>
+                  <div><div class="text-label-gray text-[10px] uppercase tracking-wider mb-1">Spread / Share</div><div class="text-xl font-medium text-green-400">+₹32.00</div></div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-label-gray text-[10px] uppercase tracking-wider mb-1">Exercise Deadline</div>
+                <div class="text-sm font-medium text-white mb-4">Oct 12, 2031</div>
+                <button onclick="switchEmployeeTab('exercise')" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-medium text-white transition-colors">Simulate Exercise</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: GRANTS ── -->
+    <div id="emp-tab-grants" class="hidden">
+      <div class="flex flex-col gap-6">
+        <div class="flex items-center justify-between"><h2 class="text-lg font-semibold text-white">Grant History</h2><button onclick="showToast('New grant flow opening...')" class="px-4 py-2 bg-white rounded-lg text-sm font-medium text-black hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">add_circle</span>Add New Grant</button></div>
+        <div class="bg-transparent border border-card-border rounded-card p-0 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead><tr class="border-b border-white/10 bg-white/[0.02]">
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Grant ID</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Grant Date</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Quantity</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Exercise Price</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Policy</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-label-gray uppercase tracking-wider">Status</th>
+                <th class="px-4 py-3 text-right text-[11px] font-semibold text-label-gray uppercase tracking-wider">Actions</th>
+              </tr></thead>
+              <tbody>
+                <tr class="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer">
+                  <td class="px-4 py-4 text-sm text-white font-light">GRT-001</td><td class="px-4 py-4 text-sm text-white font-light">Apr 3, 2021</td><td class="px-4 py-4 text-sm text-white font-medium">8,000</td><td class="px-4 py-4 text-sm text-white font-light">₹10.00</td><td class="px-4 py-4 text-sm text-white font-light">Standard 4yr-1yr Cliff</td>
+                  <td class="px-4 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/30 text-white">Active</span></td>
+                  <td class="px-4 py-4 text-right"><button onclick="showToast('Opening grant detail...')" class="text-label-gray hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button></td>
+                </tr>
+                <!-- Expanded detail panel -->
+                <tr class="bg-white/[0.03]"><td class="px-6 py-6" colspan="7">
+                  <div class="flex gap-8 text-sm">
+                    <div class="flex-1">
+                      <h4 class="text-xs font-semibold uppercase tracking-wider text-label-gray mb-4">Vesting Breakdown</h4>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-black/20 p-3 rounded-lg border border-white/5"><div class="text-[10px] text-label-gray mb-1">Vested</div><div class="text-lg font-medium text-white">6,250</div></div>
+                        <div class="bg-black/20 p-3 rounded-lg border border-white/5"><div class="text-[10px] text-label-gray mb-1">Unvested</div><div class="text-lg font-medium text-white">1,750</div></div>
+                        <div class="bg-black/20 p-3 rounded-lg border border-white/5"><div class="text-[10px] text-label-gray mb-1">Exercised</div><div class="text-lg font-medium text-tertiary-gray">0</div></div>
+                        <div class="bg-black/20 p-3 rounded-lg border border-white/5"><div class="text-[10px] text-label-gray mb-1">Forfeited</div><div class="text-lg font-medium text-tertiary-gray">0</div></div>
+                      </div>
+                    </div>
+                    <div class="flex-[1.5]">
+                      <h4 class="text-xs font-semibold uppercase tracking-wider text-label-gray mb-4">Grant Timeline</h4>
+                      <div class="flex items-center justify-between text-xs mb-6 px-2">
+                        <div class="text-center"><div class="text-green-400 font-medium mb-1">Grant Date</div><div class="text-white">Apr 3, 2021</div></div>
+                        <div class="h-[1px] flex-1 mx-4 bg-white/20 relative"><div class="absolute inset-0 bg-green-400 w-full"></div></div>
+                        <div class="text-center"><div class="text-green-400 font-medium mb-1 flex items-center gap-1 justify-center">Cliff Date <span class="material-symbols-outlined text-[12px]">check</span></div><div class="text-white">Apr 3, 2022</div></div>
+                        <div class="h-[1px] flex-1 mx-4 bg-white/20 relative"><div class="absolute inset-0 bg-green-400 w-[60%]"></div></div>
+                        <div class="text-center opacity-60"><div class="text-label-gray font-medium mb-1">Fully Vested</div><div class="text-white">Apr 3, 2025</div></div>
+                      </div>
+                      <div class="flex items-center gap-4 bg-black/20 p-3 rounded-lg border border-white/5"><span class="material-symbols-outlined text-label-gray text-lg">calendar_month</span><span class="text-label-gray text-xs">Monthly Vesting: <span class="text-white font-medium">208 options</span></span></div>
+                    </div>
+                  </div>
+                </td></tr>
+                <tr class="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer">
+                  <td class="px-4 py-4 text-sm text-white font-light">GRT-002</td><td class="px-4 py-4 text-sm text-white font-light">Jan 15, 2023</td><td class="px-4 py-4 text-sm text-white font-medium">2,000</td><td class="px-4 py-4 text-sm text-white font-light">₹18.00</td><td class="px-4 py-4 text-sm text-white font-light">Standard 4yr-1yr Cliff</td>
+                  <td class="px-4 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/30 text-white">Active</span></td>
+                  <td class="px-4 py-4 text-right"><button onclick="showToast('Opening grant detail...')" class="text-label-gray hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bg-white/[0.02] px-6 py-4 border-t border-white/10 flex items-center gap-4 text-xs text-label-gray font-mono">
+            <span>Total Granted: <span class="text-white">10,000</span></span><span class="text-white/20">|</span><span>Total Vested: <span class="text-white">6,250</span></span><span class="text-white/20">|</span><span>Total Exercised: <span class="text-white">0</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: VESTING ── -->
+    <div id="emp-tab-vesting" class="hidden flex flex-col gap-6">
+      <div class="bg-transparent border border-card-border rounded-card p-6 w-full">
+        <div class="flex justify-between items-center mb-10">
+          <h2 class="text-lg font-medium text-white">Vesting Timeline — GRT-001 (8,000 options)</h2>
+          <div class="bg-white/5 rounded-lg p-1 flex text-xs"><button class="px-3 py-1 bg-white text-black rounded font-medium">GRT-001</button><button class="px-3 py-1 text-label-gray hover:text-white transition-colors">GRT-002</button></div>
+        </div>
+        <div class="px-4 pb-4">
+          <div class="relative w-full h-24">
+            <div class="absolute top-1/2 w-full h-[1px] bg-white/10 -translate-y-1/2"></div>
+            <div class="absolute top-1/2 left-0 h-[2px] bg-white -translate-y-1/2" style="width:62.5%"></div>
+            <div class="absolute left-0 top-1/2 -translate-y-1/2"><div class="w-3 h-3 rounded-full bg-white border-2 border-white z-10 relative"></div><div class="absolute top-6 -translate-x-1/2 text-[10px] text-label-gray font-medium whitespace-nowrap">Grant Date<br/>Apr 12, 2021</div></div>
+            <div class="absolute left-[25%] top-1/2 -translate-y-1/2"><div class="w-3 h-3 rounded-full bg-white border-2 border-white z-10 relative"></div><div class="absolute top-6 -translate-x-1/2 text-[10px] text-label-gray font-medium whitespace-nowrap">Cliff (1y)<br/>Apr 12, 2022</div></div>
+            <div class="absolute left-[62.5%] top-0 h-full border-l border-dashed border-tertiary-gray z-0 flex flex-col items-center justify-end pb-12"><div class="text-[10px] text-white font-medium bg-dash-bg px-1 relative z-20 -mb-2">Today</div><div class="text-[10px] text-label-gray">Oct 2023</div></div>
+            <div class="absolute right-0 top-1/2 -translate-y-1/2"><div class="w-3 h-3 rounded-full bg-dash-bg border-2 border-tertiary-gray z-10 relative"></div><div class="absolute top-6 -translate-x-1/2 text-[10px] text-label-gray font-medium whitespace-nowrap">Full Vest<br/>Apr 12, 2025</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-transparent border border-card-border rounded-card p-6 w-full">
+        <div class="flex justify-between items-center mb-6"><h2 class="text-lg font-medium text-white">Monthly Vesting Schedule</h2></div>
+        <table class="w-full text-left border-collapse">
+          <thead><tr>
+            <th class="text-label-gray text-xs font-medium uppercase tracking-wider pb-3 border-b border-white/10 text-left">Period</th>
+            <th class="text-label-gray text-xs font-medium uppercase tracking-wider pb-3 border-b border-white/10 text-left">Vest Date</th>
+            <th class="text-label-gray text-xs font-medium uppercase tracking-wider pb-3 border-b border-white/10 text-left">Options Vesting</th>
+            <th class="text-label-gray text-xs font-medium uppercase tracking-wider pb-3 border-b border-white/10 text-left">Cumulative Vested</th>
+            <th class="text-label-gray text-xs font-medium uppercase tracking-wider pb-3 border-b border-white/10 text-right">Status</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors text-sm"><td class="py-3 text-white font-light">Cliff (12 months)</td><td class="py-3 text-white font-light">Apr 12, 2022</td><td class="py-3 text-white font-mono font-light">2,000</td><td class="py-3 text-white font-mono font-light">2,000</td><td class="py-3 text-right"><span class="text-green-400 text-xs">Vested ✓</span></td></tr>
+            <tr class="border-b border-white/5 text-sm"><td class="py-3 text-white font-light">Month 13</td><td class="py-3 text-white font-light">May 12, 2022</td><td class="py-3 font-mono font-light text-white">166</td><td class="py-3 font-mono font-light text-white">2,166</td><td class="py-3 text-right"><span class="text-green-400 text-xs">Vested ✓</span></td></tr>
+            <tr class="border-b border-white/5 text-sm"><td class="py-3 text-white font-light">Month 14</td><td class="py-3 text-white font-light">Jun 12, 2022</td><td class="py-3 font-mono font-light text-white">166</td><td class="py-3 font-mono font-light text-white">2,332</td><td class="py-3 text-right"><span class="text-green-400 text-xs">Vested ✓</span></td></tr>
+            <tr class="border-b border-white/5 text-sm"><td class="py-3 text-white font-light">Month 19</td><td class="py-3 text-white font-light">Nov 12, 2022</td><td class="py-3 font-mono font-light text-white">166</td><td class="py-3 font-mono font-light text-white">3,162</td><td class="py-3 text-right"><span class="text-green-400 text-xs">Vested ✓</span></td></tr>
+            <tr class="border-b border-white/5 text-sm"><td class="py-3 text-white font-light">Month 25</td><td class="py-3 text-white font-light">May 12, 2023</td><td class="py-3 font-mono font-light text-white">166</td><td class="py-3 font-mono font-light text-white">5,162</td><td class="py-3 text-right"><span class="text-green-400 text-xs">Vested ✓</span></td></tr>
+            <tr class="border-b border-white/5 bg-white/[0.03] text-sm"><td class="py-3 pl-0 font-medium text-white">Month 31 (Upcoming)</td><td class="py-3 text-white font-light">Nov 3, 2023</td><td class="py-3 font-mono font-light text-white">166</td><td class="py-3 font-mono font-light text-white">6,416</td><td class="py-3 text-right"><span class="inline-block px-2 py-0.5 text-[10px] uppercase font-bold text-label-gray border border-dashed border-tertiary-gray rounded-full">Pending</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── TAB: EXERCISE ── -->
+    <div id="emp-tab-exercise" class="hidden">
+      <div class="grid grid-cols-2 gap-6 mb-8">
+        <div class="bg-transparent border border-card-border rounded-card p-6 flex flex-col">
+          <div class="flex justify-between items-start mb-6"><h3 class="text-white font-medium">Current Eligibility</h3><div class="flex items-center gap-1 text-green-400"><span class="material-symbols-outlined text-[18px]">check_circle</span><span class="text-xs font-medium uppercase tracking-wider">Eligible to Exercise</span></div></div>
+          <div class="space-y-0 mb-6 flex-1">
+            <div class="flex justify-between py-2 border-b border-white/5"><span class="text-sm text-label-gray">Vested &amp; Unexercised</span><span class="text-lg font-medium text-white">6,250</span></div>
+            <div class="flex justify-between py-2 border-b border-white/5"><span class="text-sm text-label-gray">Exercise Price</span><span class="text-sm text-white font-light">₹10.00</span></div>
+            <div class="flex justify-between py-2 border-b border-white/5"><span class="text-sm text-label-gray">FMV</span><span class="text-sm text-white font-light">₹42.00</span></div>
+            <div class="flex justify-between py-2 border-b border-white/5"><span class="text-sm text-label-gray">Paper Gain / Share</span><span class="text-sm text-white font-light">₹32.00</span></div>
+            <div class="flex justify-between py-2 pt-4 mt-2 border-t border-dashed border-white/10"><span class="text-sm text-white font-medium">Total Potential Gain</span><span class="text-lg text-white font-medium">₹2,00,000</span></div>
+          </div>
+          <div class="bg-white/5 rounded-lg p-3 mb-6 flex items-center gap-3"><span class="material-symbols-outlined text-label-gray text-[20px]">date_range</span><div><span class="text-[10px] text-label-gray uppercase tracking-wider font-semibold block">Exercise Window</span><span class="text-sm text-white">Apr 3, 2022 - Apr 3, 2024 <span class="text-tertiary-gray ml-1">(165 days remaining)</span></span></div></div>
+          <button onclick="showToast('Exercise request initiated for Ananya Sharma')" class="w-full bg-white text-black font-medium py-2.5 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Initiate Exercise Request<span class="material-symbols-outlined text-[18px]">arrow_forward</span></button>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6 flex flex-col">
+          <div class="flex justify-between items-start mb-6"><h3 class="text-white font-medium">Exercise History</h3></div>
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="p-4 rounded-xl bg-white/5 border border-white/5"><div class="text-label-gray text-xs uppercase tracking-wider mb-1">Total Exercised</div><div class="text-2xl text-white font-light">0</div></div>
+            <div class="p-4 rounded-xl bg-white/5 border border-white/5"><div class="text-label-gray text-xs uppercase tracking-wider mb-1">Total Remaining</div><div class="text-2xl text-white font-light">6,250</div></div>
+          </div>
+          <div class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-xl p-8 min-h-[200px]"><div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3"><span class="material-symbols-outlined text-tertiary-gray text-[24px]">history</span></div><p class="text-label-gray text-sm font-medium">No exercise events recorded yet</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: POLICY ── -->
+    <div id="emp-tab-policy" class="hidden">
+      <div class="grid grid-cols-2 gap-6">
+        <div class="bg-transparent border border-card-border rounded-card p-6 flex flex-col">
+          <div class="flex justify-between items-start mb-6"><div><h3 class="text-lg font-medium text-white mb-1">Assigned Policy</h3><p class="text-label-gray text-xs">Currently active vesting rules</p></div><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/30 text-white">Active</span></div>
+          <div class="mb-8"><h2 class="text-xl font-semibold text-white mb-2">Standard 4-Year / 1-Year Cliff</h2><div class="flex items-center gap-4 text-xs font-mono text-label-gray"><span class="bg-white/5 px-2 py-1 rounded">ID: POL-001</span><span class="bg-white/5 px-2 py-1 rounded">Version: v2.1</span></div></div>
+          <div class="space-y-6 flex-1">
+            <div><h4 class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-3 border-b border-white/5 pb-2">Policy Structure</h4>
+              <div class="space-y-3">
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Vesting Period</span><span class="text-white">4 Years</span></div>
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Cliff Period</span><span class="text-white">1 Year (25%)</span></div>
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Frequency</span><span class="text-white">Monthly (post-cliff)</span></div>
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Total Vesting Events</span><span class="text-white">48 (1 cliff + 47 monthly)</span></div>
+              </div>
+            </div>
+            <div><h4 class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-3 border-b border-white/5 pb-2">Eligibility Criteria</h4>
+              <div class="space-y-3">
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Employment Type</span><span class="text-white">Full-Time</span></div>
+                <div class="flex justify-between text-sm"><span class="text-label-gray">Minimum Tenure</span><span class="text-white">12 Months</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-6 mt-6 border-t border-card-border"><a onclick="navigateTo('policies')" class="text-sm text-label-gray hover:text-white transition-colors flex items-center gap-1 cursor-pointer">View Full Policy Details →</a></div>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6 flex flex-col">
+          <div class="mb-6"><h3 class="text-lg font-medium text-white mb-1">Version History</h3><p class="text-label-gray text-xs">Audit log of policy modifications</p></div>
+          <div class="flex-1 space-y-0">
+            <div class="relative pl-6 pb-6 border-l border-white/10"><div class="absolute left-[-5px] top-1 w-[9px] h-[9px] rounded-full bg-white border-2 border-[#111]"></div><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-3"><span class="text-sm font-semibold text-white">v2.1</span><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/30 text-white">Current</span></div><span class="text-xs text-label-gray">Jan 1, 2022</span></div><p class="text-sm text-gray-300 mb-2">Updated cliff duration handling for leave of absence.</p><div class="flex items-center gap-2 mt-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[8px] font-bold">DR</div><span class="text-xs text-label-gray">Updated by David Ross</span></div></div>
+            <div class="relative pl-6 pb-6 border-l border-white/10"><div class="absolute left-[-5px] top-1 w-[9px] h-[9px] rounded-full bg-tertiary-gray border-2 border-[#111]"></div><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-3"><span class="text-sm font-medium text-gray-400">v2.0</span><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-dashed border-gray-600 text-gray-400">Archived</span></div><span class="text-xs text-label-gray">Jun 15, 2020</span></div><p class="text-sm text-label-gray mb-2">Standardized vesting schedule. Introduced monthly post-cliff.</p><div class="flex items-center gap-2 mt-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[8px] font-bold">SJ</div><span class="text-xs text-label-gray">Updated by Sarah Jenkins</span></div></div>
+            <div class="relative pl-6 border-l border-white/10"><div class="absolute left-[-5px] top-1 w-[9px] h-[9px] rounded-full bg-tertiary-gray border-2 border-[#111]"></div><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-3"><span class="text-sm font-medium text-gray-400">v1.0</span><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-dashed border-gray-600 text-gray-400">Archived</span></div><span class="text-xs text-label-gray">Jan 1, 2018</span></div><p class="text-sm text-label-gray mb-2">Initial policy creation. 4-year vesting with annual cliffs.</p><div class="flex items-center gap-2 mt-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[8px] font-bold">A</div><span class="text-xs text-label-gray">Created by System Admin</span></div></div>
+          </div>
+          <div class="pt-6 mt-6 border-t border-card-border"><p class="text-xs text-label-gray italic">Policy changes apply to future grants only. Historical grants retain the policy version active at time of grant.</p></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end scroll container -->
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: ADD NEW EMPLOYEE
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-employee-add">
+<main class="flex-1 ml-[260px] flex flex-col h-screen overflow-hidden bg-dash-bg">
+  <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 bg-dash-bg shrink-0">
+    <div class="flex items-center gap-2 text-xs text-label-gray">
+      <span class="hover:text-white transition-colors cursor-pointer" onclick="navigateTo('employees')">Employees</span>
+      <span class="material-symbols-outlined text-[12px]">chevron_right</span>
+      <span class="text-white">Add New Employee</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2 text-label-gray px-3 py-1 border border-card-border rounded-full"><span class="text-[10px] font-bold uppercase tracking-wider">Admin</span></div>
+      <button class="w-8 h-8 flex items-center justify-center rounded-full text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full"></span></button>
+      <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+    </div>
+  </header>
+  <div class="flex-1 flex flex-col overflow-y-auto">
+    <div class="max-w-4xl w-full mx-auto px-8 py-8 pb-20">
+      <div class="flex flex-col gap-8 mb-8">
+        <div class="flex items-start justify-between">
+          <div><h1 class="text-2xl font-semibold text-white mb-1">Add New Employee</h1><p class="text-label-gray text-sm">Enter the employee's personal and employment details.</p></div>
+          <button onclick="navigateTo('employees')" class="px-4 py-2 border border-card-border rounded-lg text-sm font-medium text-label-gray hover:text-white hover:border-white transition-colors">Cancel</button>
+        </div>
+        <!-- Step indicator -->
+        <div class="flex items-center justify-between w-full max-w-2xl">
+          <div class="flex items-center gap-3"><div class="w-6 h-6 rounded-full bg-white text-black text-xs font-bold flex items-center justify-center">1</div><span class="text-sm font-medium text-white">Employee Info</span></div>
+          <div class="flex-1 h-[1px] bg-white/10 mx-3"></div>
+          <div class="flex items-center gap-3"><div class="w-6 h-6 rounded-full border border-tertiary-gray text-tertiary-gray text-xs font-bold flex items-center justify-center">2</div><span class="text-sm text-tertiary-gray">Grant Details</span></div>
+          <div class="flex-1 h-[1px] bg-white/10 mx-3"></div>
+          <div class="flex items-center gap-3"><div class="w-6 h-6 rounded-full border border-tertiary-gray text-tertiary-gray text-xs font-bold flex items-center justify-center">3</div><span class="text-sm text-tertiary-gray">Review</span></div>
+        </div>
+      </div>
+      <div class="bg-transparent border border-card-border rounded-card p-8 mb-8">
+        <div class="grid grid-cols-2 gap-x-8 gap-y-6">
+          <div class="flex flex-col gap-6">
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Full Name *</label><input class="w-full bg-transparent border border-white rounded-lg px-3 py-2.5 text-sm text-white focus:ring-0 outline-none transition-colors placeholder:text-tertiary-gray shadow-[0_0_0_1px_rgba(255,255,255,1)]" placeholder="e.g. John Doe" type="text"/></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Employee ID *</label><input class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors placeholder:text-tertiary-gray" placeholder="e.g. EMP-1234" type="text"/></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Email Address *</label><input class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors placeholder:text-tertiary-gray" placeholder="john.doe@techflow.inc" type="email"/></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Department</label><div class="relative"><select class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors appearance-none cursor-pointer"><option>Select Department</option><option>Engineering</option><option>Product</option><option>Marketing</option><option>Sales</option><option>Design</option><option>Finance</option></select><span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-tertiary-gray pointer-events-none text-[18px]">expand_more</span></div></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Job Title</label><input class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors placeholder:text-tertiary-gray" placeholder="e.g. Senior Product Designer" type="text"/></div>
+          </div>
+          <div class="flex flex-col gap-6">
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Start Date *</label><input class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors" type="date"/></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Employment Type</label><div class="flex bg-transparent border border-card-border rounded-lg p-1 w-full"><button class="flex-1 py-1.5 text-sm font-medium text-black bg-white rounded shadow-sm">Full-time</button><button class="flex-1 py-1.5 text-sm font-medium text-label-gray hover:text-white transition-colors">Part-time</button><button class="flex-1 py-1.5 text-sm font-medium text-label-gray hover:text-white transition-colors">Contract</button></div></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Manager</label><div class="relative"><input class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors pl-9 placeholder:text-tertiary-gray" placeholder="Search manager..." type="text"/><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span></div></div>
+            <div><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Employee Level</label><div class="relative"><select class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors appearance-none cursor-pointer"><option>Select Level</option><option>Junior (L1-L2)</option><option>Mid-Level (L3-L4)</option><option>Senior (L5-L6)</option><option>Executive (L7+)</option></select><span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-tertiary-gray pointer-events-none text-[18px]">expand_more</span></div></div>
+          </div>
+          <div class="col-span-2 mt-2"><label class="text-label-gray text-[11px] uppercase tracking-wider font-semibold mb-2 block">Notes / Special Instructions</label><textarea class="w-full bg-transparent border border-card-border rounded-lg px-3 py-2.5 text-sm text-white focus:border-white focus:ring-0 outline-none transition-colors placeholder:text-tertiary-gray min-h-[100px] resize-none" placeholder="Add any additional notes about this employee..."></textarea></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-4 border-t border-white/5">
+        <span class="text-xs text-tertiary-gray">* Required fields</span>
+        <div class="flex items-center gap-3">
+          <button onclick="showToast('Draft saved successfully')" class="px-4 py-2 border border-card-border rounded-lg text-sm font-medium text-label-gray hover:text-white hover:border-white transition-colors">Save Draft</button>
+          <button onclick="showToast('Moving to Grant Details step...')" class="px-4 py-2 bg-white rounded-lg text-sm font-medium text-black hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2">Continue to Grant Details<span class="material-symbols-outlined text-[16px]">arrow_forward</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: GRANTS LIST (all tabs live-switch)
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-grants">
+<main class="flex-1 ml-[260px] flex flex-col min-h-screen bg-dash-bg">
+  <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 sticky top-0 z-40 bg-dash-bg/95 backdrop-blur-sm">
+    <div class="flex items-center gap-2">
+      <span class="text-[12px] text-tertiary-gray">Grants</span>
+      <span class="text-[12px] text-tertiary-gray">/</span>
+      <span id="grants-breadcrumb" class="text-[12px] text-label-gray">All Grants</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <button class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span></button>
+      <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+    </div>
+  </header>
+  <div class="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+    <!-- Page title + actions -->
+    <div class="flex items-end justify-between">
+      <div><h2 class="text-2xl font-semibold text-white">Grants</h2><p class="text-label-gray mt-1 text-sm">218 total grants issued across 142 employees</p></div>
+      <div class="flex gap-3">
+        <button onclick="showToast('Import coming soon')" class="border border-card-border text-white hover:bg-white/5 px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">upload</span>Import Grants</button>
+        <button onclick="navigateTo('grant-new')" class="bg-white hover:bg-gray-200 text-black px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 shadow-lg"><span class="material-symbols-outlined text-[18px]">add</span>New Grant</button>
+      </div>
+    </div>
+    <!-- KPI row -->
+    <div class="grid grid-cols-4 gap-4">
+      <div class="bg-transparent border border-card-border rounded-card p-5 flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Total Grants Issued</p><span class="text-3xl text-white font-light">218</span></div>
+      <div class="bg-transparent border border-card-border rounded-card p-5 flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Active</p><span class="text-3xl text-white font-light">194</span></div>
+      <div class="bg-transparent border border-card-border rounded-card p-5 flex flex-col gap-1 cursor-pointer hover:bg-white/5 transition-colors" onclick="switchGrantsTab('pending')"><p class="text-label-gray text-[11px] uppercase tracking-wider">Pending Approval</p><span class="text-3xl text-white font-light">6</span></div>
+      <div class="bg-transparent border border-card-border rounded-card p-5 flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Expired / Forfeited</p><span class="text-3xl text-white font-light">18</span></div>
+    </div>
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3 flex-1">
+        <div class="relative w-64"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span><input class="w-full bg-transparent border border-card-border rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all" placeholder="Search by employee..." type="text"/></div>
+        <div class="h-6 w-px bg-card-border mx-1"></div>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-card-border text-xs text-label-gray hover:text-white hover:border-white/40 transition-colors">Status <span class="material-symbols-outlined text-[14px]">expand_more</span></button>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-card-border text-xs text-label-gray hover:text-white hover:border-white/40 transition-colors">Policy <span class="material-symbols-outlined text-[14px]">expand_more</span></button>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-card-border text-xs text-label-gray hover:text-white hover:border-white/40 transition-colors">Dept <span class="material-symbols-outlined text-[14px]">expand_more</span></button>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-card-border text-xs text-label-gray hover:text-white hover:border-white/40 transition-colors">Date <span class="material-symbols-outlined text-[14px]">expand_more</span></button>
+        <button class="text-xs text-tertiary-gray hover:text-white ml-2">Clear Filters</button>
+      </div>
+      <button onclick="showToast('Exporting grant data...')" class="flex items-center gap-2 px-3 py-1.5 text-xs text-label-gray hover:text-white transition-colors"><span class="material-symbols-outlined text-[16px]">download</span>Export</button>
+    </div>
+    <!-- Tab bar -->
+    <div class="border-b border-card-border">
+      <div class="flex gap-8">
+        <button id="gtab-all" onclick="switchGrantsTab('all')" class="pb-3 text-sm font-medium text-white border-b-2 border-white">All Grants</button>
+        <button id="gtab-active" onclick="switchGrantsTab('active')" class="pb-3 text-sm font-medium text-label-gray hover:text-white transition-colors">Active <span class="ml-1 text-xs text-tertiary-gray">194</span></button>
+        <button id="gtab-pending" onclick="switchGrantsTab('pending')" class="pb-3 text-sm font-medium text-label-gray hover:text-white transition-colors">Pending Approval <span class="ml-1 text-xs text-tertiary-gray">6</span></button>
+        <button id="gtab-draft" onclick="switchGrantsTab('draft')" class="pb-3 text-sm font-medium text-label-gray hover:text-white transition-colors">Draft</button>
+        <button id="gtab-expired" onclick="switchGrantsTab('expired')" class="pb-3 text-sm font-medium text-label-gray hover:text-white transition-colors">Expired</button>
+        <button id="gtab-forfeited" onclick="switchGrantsTab('forfeited')" class="pb-3 text-sm font-medium text-label-gray hover:text-white transition-colors">Forfeited</button>
+      </div>
+    </div>
+
+    <!-- ── VIEW: ALL GRANTS ── -->
+    <div id="grants-view-all">
+      <!-- Bulk action bar -->
+      <div class="bg-white/5 border border-card-border rounded-lg px-4 py-2 flex items-center gap-4 mb-4">
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border border-card-border bg-white flex items-center justify-center"><span class="material-symbols-outlined text-black text-[12px]">remove</span></div><span class="text-sm text-white font-medium">3 selected</span></div>
+        <div class="h-4 w-px bg-white/10"></div>
+        <button onclick="openModal('modal-grant-approval')" class="px-3 py-1 bg-white text-black text-xs font-medium rounded hover:bg-gray-200">Approve Selected</button>
+        <button onclick="showToast('Exporting selected grants...')" class="px-3 py-1 border border-card-border text-white text-xs font-medium rounded hover:bg-white/10">Export</button>
+        <button onclick="showToast('Void confirmation required')" class="px-3 py-1 border border-card-border text-white text-xs font-medium rounded hover:bg-white/10">Void Grants</button>
+      </div>
+      <div class="bg-transparent border border-card-border rounded-card overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-white/5"><tr>
+            <th class="w-10 px-6 py-4 border-b border-card-border"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox"/></th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Grant ID</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Employee</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Vesting Schedule</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Grant Date</th>
+            <th class="px-6 py-4 text-right text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Granted</th>
+            <th class="px-6 py-4 text-right text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Vested</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border w-24">Progress</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Status</th>
+            <th class="px-6 py-4 border-b border-card-border w-16"></th>
+          </tr></thead>
+          <tbody class="divide-y divide-card-border">
+            <tr class="hover:bg-white/5 transition-colors group cursor-pointer" onclick="navigateTo('grant-detail')">
+              <td class="px-6 py-4 border-b border-card-border"><input checked class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-001</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Ananya Sharma</span><span class="text-[11px] text-label-gray">Engineering</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Standard 4Y/1C</td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Mar 12, 2021</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">10,000</td>
+              <td class="px-6 py-4 text-sm text-label-gray text-right border-b border-card-border">6,250</td>
+              <td class="px-6 py-4 border-b border-card-border"><div class="w-full h-1 bg-tertiary-gray/30 rounded-full"><div class="h-full bg-white rounded-full" style="width:62%"></div></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white text-white">Active</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button class="text-xs font-medium text-label-gray hover:text-white">View</button></td>
+            </tr>
+            <tr class="hover:bg-white/5 transition-colors group cursor-pointer" onclick="switchGrantsTab('pending')">
+              <td class="px-6 py-4 border-b border-card-border"><input checked class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-004</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Karan Singh</span><span class="text-[11px] text-label-gray">Engineering</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Standard 4Y/1C</td>
+              <td class="px-6 py-4 text-sm text-tertiary-gray border-b border-card-border">—</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">6,000</td>
+              <td class="px-6 py-4 text-sm text-tertiary-gray text-right border-b border-card-border">—</td>
+              <td class="px-6 py-4 border-b border-card-border"><div class="w-full h-1 bg-tertiary-gray/30 rounded-full"></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-white text-white">Pending</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button class="text-xs font-medium text-white hover:underline">Review</button></td>
+            </tr>
+            <tr class="hover:bg-white/5 transition-colors group opacity-50 cursor-pointer">
+              <td class="px-6 py-4 border-b border-card-border"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-006</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Vikram Patel</span><span class="text-[11px] text-label-gray">Sales</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Early Employee</td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Aug 01, 2019</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">2,000</td>
+              <td class="px-6 py-4 text-sm text-label-gray text-right border-b border-card-border">2,000</td>
+              <td class="px-6 py-4 border-b border-card-border"><div class="w-full h-1 bg-tertiary-gray/30 rounded-full"><div class="h-full bg-white rounded-full w-full"></div></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-tertiary-gray text-label-gray">Expired</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button class="text-xs font-medium text-label-gray hover:text-white">View</button></td>
+            </tr>
+            <tr class="hover:bg-white/5 transition-colors group cursor-pointer">
+              <td class="px-6 py-4 border-b border-card-border"><input checked class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-008</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Arjun Das</span><span class="text-[11px] text-label-gray">Product</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Standard 4Y/1C</td>
+              <td class="px-6 py-4 text-sm text-tertiary-gray border-b border-card-border">—</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">5,000</td>
+              <td class="px-6 py-4 text-sm text-tertiary-gray text-right border-b border-card-border">—</td>
+              <td class="px-6 py-4 border-b border-card-border"><div class="w-full h-1 bg-tertiary-gray/30 rounded-full"></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-tertiary-gray text-label-gray">Draft</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button class="text-xs font-medium text-label-gray hover:text-white">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-6 py-4 border-t border-card-border flex items-center justify-between">
+          <p class="text-xs text-label-gray">Showing <span class="text-white font-medium">1–9</span> of <span class="text-white font-medium">218</span> grants</p>
+          <div class="flex items-center gap-2">
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray opacity-50 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border bg-white text-black text-xs font-medium">1</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray hover:text-white text-xs">2</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray hover:text-white text-xs">3</button>
+            <span class="text-label-gray text-xs px-1">...</span>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray hover:text-white text-xs">24</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray hover:text-white"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: PENDING APPROVAL ── -->
+    <div id="grants-view-pending" class="hidden">
+      <div class="bg-transparent border border-card-border rounded-card overflow-hidden">
+        <div class="bg-blue-500/10 border-b border-blue-500/20 px-6 py-3 flex items-start gap-3">
+          <span class="material-symbols-outlined text-blue-400 text-lg mt-0.5">info</span>
+          <div><p class="text-sm text-blue-100 font-medium">Approval Required</p><p class="text-xs text-blue-200/70 mt-0.5">6 grants awaiting final approval. Grants approved today will be issued effective immediately.</p></div>
+        </div>
+        <table class="w-full">
+          <thead class="bg-white/5"><tr>
+            <th class="w-10 px-6 py-4 border-b border-card-border"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox"/></th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Grant ID</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Employee</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Vesting Schedule</th>
+            <th class="px-6 py-4 text-right text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Options</th>
+            <th class="px-6 py-4 text-right text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Strike Price</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Submitter</th>
+            <th class="px-6 py-4 text-left text-[11px] font-medium text-label-gray uppercase tracking-wider border-b border-card-border">Status</th>
+            <th class="px-6 py-4 border-b border-card-border w-16"></th>
+          </tr></thead>
+          <tbody class="divide-y divide-card-border">
+            <!-- GRT-009 expanded row -->
+            <tr class="bg-white/[0.03] border-b border-card-border border-l-2 border-l-white">
+              <td class="px-6 py-4 align-top"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4 mt-1" type="checkbox"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium align-top">GRT-009</td>
+              <td class="px-6 py-4 text-sm align-top"><div class="flex flex-col"><span class="text-white font-medium">Tanya Verma</span><span class="text-[11px] text-label-gray">Product Design</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray align-top">Standard 4Y/1C</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right align-top">12,500</td>
+              <td class="px-6 py-4 text-sm text-label-gray text-right align-top">₹18.00</td>
+              <td class="px-6 py-4 text-sm align-top"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">JD</div><span class="text-xs text-label-gray">John Doe</span></div></td>
+              <td class="px-6 py-4 text-sm align-top"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-orange-400/50 text-orange-200 bg-orange-500/10">Pending Approval</span></td>
+              <td class="px-6 py-4 text-right align-top"><button onclick="openModal('modal-grant-approval')" class="text-xs font-medium text-white hover:underline">Approve</button></td>
+            </tr>
+            <tr class="bg-white/[0.03]">
+              <td class="px-6 pb-6 pt-0 border-b border-card-border" colspan="9">
+                <div class="pl-14">
+                  <div class="p-6 bg-[#0A0A0A] rounded-xl border border-card-border grid grid-cols-12 gap-8">
+                    <div class="col-span-8">
+                      <h4 class="text-xs uppercase tracking-wider text-label-gray font-medium mb-4">Approval Stage Tracker</h4>
+                      <div class="relative flex items-center justify-between">
+                        <div class="absolute left-0 top-[15px] w-full h-[2px] bg-tertiary-gray/30"></div>
+                        <div class="relative z-10 flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-500/20 border border-green-500 text-green-500 flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">check</span></div><div class="text-center"><p class="text-xs text-white font-medium">Drafted</p><p class="text-[10px] text-label-gray">Oct 24, 10:00 AM</p></div></div>
+                        <div class="relative z-10 flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-500/20 border border-green-500 text-green-500 flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">check</span></div><div class="text-center"><p class="text-xs text-white font-medium">Manager Review</p><p class="text-[10px] text-label-gray">Oct 24, 02:30 PM</p></div></div>
+                        <div class="relative z-10 flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full bg-blue-500 text-white border border-blue-400 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]"><span class="material-symbols-outlined text-[16px]">gavel</span></div><div class="text-center"><p class="text-xs text-white font-medium">Board Approval</p><p class="text-[10px] text-blue-400">Current Stage</p></div></div>
+                        <div class="relative z-10 flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full bg-dash-bg border border-tertiary-gray text-tertiary-gray flex items-center justify-center"><span class="text-[10px] font-bold">4</span></div><div class="text-center"><p class="text-xs text-label-gray font-medium">Grant Issue</p></div></div>
+                      </div>
+                    </div>
+                    <div class="col-span-4 border-l border-card-border pl-8 flex flex-col justify-center gap-4">
+                      <div><h4 class="text-xs uppercase tracking-wider text-label-gray font-medium mb-2">Actions</h4><p class="text-xs text-tertiary-gray mb-4">Review details before approving. This action cannot be easily undone.</p></div>
+                      <div class="flex flex-col gap-3">
+                        <button onclick="openModal('modal-grant-approval')" class="w-full bg-white hover:bg-gray-200 text-black py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">check_circle</span>Approve Grant</button>
+                        <button onclick="showToast('Rejection comment dialog coming soon')" class="w-full border border-card-border hover:bg-white/5 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">block</span>Reject with Comment</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr class="hover:bg-white/5 transition-colors group cursor-pointer">
+              <td class="px-6 py-4 border-b border-card-border"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-012</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Rahul Mehta</span><span class="text-[11px] text-label-gray">Engineering</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Standard 4Y/1C</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">8,000</td>
+              <td class="px-6 py-4 text-sm text-label-gray text-right border-b border-card-border">₹18.00</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">AS</div><span class="text-xs text-label-gray">Ananya S.</span></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-orange-400/50 text-orange-200 bg-orange-500/10">Pending Approval</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button onclick="openModal('modal-grant-approval')" class="text-xs font-medium text-white hover:underline">Review</button></td>
+            </tr>
+            <tr class="hover:bg-white/5 transition-colors group cursor-pointer">
+              <td class="px-6 py-4 border-b border-card-border"><input class="rounded border-gray-600 bg-transparent text-white focus:ring-0 w-4 h-4" type="checkbox" onclick="event.stopPropagation()"/></td>
+              <td class="px-6 py-4 text-sm text-white font-medium border-b border-card-border">GRT-015</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex flex-col"><span class="text-white font-medium">Sarah Jenkins</span><span class="text-[11px] text-label-gray">Marketing</span></div></td>
+              <td class="px-6 py-4 text-sm text-label-gray border-b border-card-border">Advisor 2Y</td>
+              <td class="px-6 py-4 text-sm text-white font-medium text-right border-b border-card-border">2,500</td>
+              <td class="px-6 py-4 text-sm text-label-gray text-right border-b border-card-border">₹18.00</td>
+              <td class="px-6 py-4 text-sm border-b border-card-border"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">JD</div><span class="text-xs text-label-gray">John Doe</span></div></td>
+              <td class="px-6 py-4 border-b border-card-border"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-orange-400/50 text-orange-200 bg-orange-500/10">Pending Approval</span></td>
+              <td class="px-6 py-4 text-right border-b border-card-border"><button onclick="openModal('modal-grant-approval')" class="text-xs font-medium text-white hover:underline">Review</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-6 py-4 border-t border-card-border flex items-center justify-between">
+          <p class="text-xs text-label-gray">Showing <span class="text-white font-medium">1–3</span> of <span class="text-white font-medium">6</span> pending grants</p>
+          <div class="flex items-center gap-2">
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray opacity-50 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border bg-white text-black text-xs font-medium">1</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded border border-card-border text-label-gray opacity-50 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: OTHER TABS (placeholder) ── -->
+    <div id="grants-view-other" class="hidden">
+      <div class="flex flex-col items-center justify-center py-24 gap-4 border border-dashed border-card-border rounded-card">
+        <div class="w-12 h-12 rounded-full border border-card-border flex items-center justify-center"><span class="material-symbols-outlined text-label-gray text-xl">military_tech</span></div>
+        <p class="text-white font-medium" id="grants-other-label">No grants in this view</p>
+        <p class="text-tertiary-gray text-sm">Switch to All Grants or Pending Approval to see data.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: GRANT DETAIL — GRT-001
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-grant-detail">
+<main class="flex-1 ml-[260px] flex flex-col min-h-screen bg-dash-bg">
+  <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 sticky top-0 z-40 bg-dash-bg/95 backdrop-blur-sm">
+    <div class="flex items-center gap-2">
+      <span onclick="navigateTo('grants')" class="text-[12px] text-tertiary-gray hover:text-white cursor-pointer transition-colors">Grants</span>
+      <span class="text-[12px] text-tertiary-gray">/</span>
+      <span class="text-[12px] text-label-gray">GRT-001 — Ananya Sharma</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <button class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span></button>
+      <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+    </div>
+  </header>
+  <div class="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+    <div class="flex items-end justify-between">
+      <div><h1 class="text-2xl font-semibold text-white">GRT-001</h1><p class="text-label-gray mt-1 text-sm">Ananya Sharma · Engineering · Standard 4Y/1C Policy</p></div>
+      <div class="flex items-center gap-3">
+        <div class="px-3 py-1 rounded-full border border-white text-xs font-medium text-white flex items-center gap-1.5 mr-2"><div class="w-1.5 h-1.5 rounded-full bg-white"></div>Active</div>
+        <button onclick="showToast('Downloading grant letter...')" class="border border-card-border text-white hover:bg-white/5 px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">download</span>Download Grant Letter</button>
+        <button onclick="showToast('Amend grant flow coming soon')" class="border border-card-border text-white hover:bg-white/5 px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">edit_document</span>Amend Grant</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-12 gap-6">
+      <!-- Left col -->
+      <div class="col-span-12 lg:col-span-7 space-y-6">
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <h3 class="text-base font-medium text-white mb-6">Grant Overview</h3>
+          <div class="grid grid-cols-3 gap-y-8 gap-x-4">
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Grant Date</p><p class="text-white font-light text-xl">Mar 12, 2021</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Exercise Price</p><p class="text-white font-light text-xl">₹10</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Total Quantity</p><p class="text-white font-light text-2xl">10,000</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Grant Type</p><p class="text-white font-light text-xl">Standard</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">FMV at Grant</p><p class="text-white font-light text-xl">₹22</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Policy Version</p><p class="text-white font-light text-xl">v2.1</p></div>
+          </div>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <h3 class="text-base font-medium text-white mb-6">Vesting Status</h3>
+          <div class="relative pt-6 pb-2 px-2">
+            <div class="w-full h-2 bg-tertiary-gray/30 rounded-full overflow-hidden mb-2"><div class="h-full bg-white w-[62.5%]"></div></div>
+            <div class="flex justify-between text-xs text-label-gray mt-2 font-medium">
+              <span>Grant</span><span class="text-white">Cliff ✓</span><span class="text-white">Today</span><span>Full Vest</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-card-border">
+            <div class="text-center border-r border-card-border"><p class="text-label-gray text-[11px] uppercase tracking-wider mb-1">Vested</p><p class="text-2xl font-light text-white">6,250</p></div>
+            <div class="text-center border-r border-card-border"><p class="text-label-gray text-[11px] uppercase tracking-wider mb-1">Unvested</p><p class="text-2xl font-light text-white opacity-60">3,750</p></div>
+            <div class="text-center"><p class="text-label-gray text-[11px] uppercase tracking-wider mb-1">Exercised</p><p class="text-2xl font-light text-white">2,000</p></div>
+          </div>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <div class="flex items-center justify-between mb-6"><h3 class="text-base font-medium text-white">Exercise Details</h3><span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-white text-black tracking-wide">Window Open</span></div>
+          <div class="grid grid-cols-3 gap-6 mb-8">
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Eligible to Exercise</p><p class="text-white font-light text-2xl">4,250</p><p class="text-[10px] text-tertiary-gray">Options</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Current FMV</p><p class="text-white font-light text-2xl">₹58</p></div>
+            <div class="flex flex-col gap-1"><p class="text-label-gray text-[11px] uppercase tracking-wider">Total Value</p><p class="text-white font-light text-2xl">₹2,04,000</p><p class="text-[10px] text-tertiary-gray">(FMV - Strike) × Eligible</p></div>
+          </div>
+          <button onclick="showToast('Exercise initiation flow coming soon')" class="border border-white text-white hover:bg-white hover:text-black px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 w-full">Initiate Exercise for this Grant <span class="material-symbols-outlined text-[16px]">arrow_forward</span></button>
+        </div>
+      </div>
+      <!-- Right col -->
+      <div class="col-span-12 lg:col-span-5 space-y-6">
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex gap-4">
+              <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm text-white font-bold border border-card-border">AS</div>
+              <div><h3 class="text-lg font-medium text-white">Ananya Sharma</h3><p class="text-sm text-label-gray">Senior Engineer</p></div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-card-border text-label-gray">Active</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white/5 rounded-lg p-3"><p class="text-[10px] text-label-gray uppercase tracking-wider mb-1">Total Grants</p><p class="text-xl font-light text-white">3</p></div>
+            <div class="bg-white/5 rounded-lg p-3"><p class="text-[10px] text-label-gray uppercase tracking-wider mb-1">Total Vested</p><p class="text-xl font-light text-white">7,708</p></div>
+          </div>
+          <button onclick="navigateTo('employee-detail')" class="text-xs text-label-gray hover:text-white flex items-center gap-1 transition-colors">View Full Employee Profile <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <h3 class="text-base font-medium text-white mb-6">Approval History</h3>
+          <div class="relative pl-2">
+            <div class="absolute left-[7px] top-2 bottom-2 w-px bg-card-border"></div>
+            <div class="relative pl-6 pb-8"><div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border border-card-border bg-dash-bg z-10"></div><p class="text-xs text-label-gray mb-0.5">Mar 10, 2021 · 10:42 AM</p><p class="text-sm text-white font-medium">Grant Submitted</p><p class="text-xs text-tertiary-gray mt-1">Initiated by System Admin</p></div>
+            <div class="relative pl-6 pb-8"><div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border border-card-border bg-dash-bg z-10"></div><p class="text-xs text-label-gray mb-0.5">Mar 11, 2021 · 02:15 PM</p><p class="text-sm text-white font-medium">Approved by Finance</p><p class="text-xs text-tertiary-gray mt-1">Approved by Rajesh K. (CFO)</p></div>
+            <div class="relative pl-6"><div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border border-white bg-white z-10"></div><p class="text-xs text-label-gray mb-0.5">Mar 12, 2021 · 09:00 AM</p><p class="text-sm text-white font-medium">Grant Confirmed</p><p class="text-xs text-tertiary-gray mt-1">Finalized and Letter Generated</p></div>
+          </div>
+        </div>
+        <div class="bg-transparent border border-card-border rounded-card p-6">
+          <h3 class="text-base font-medium text-white mb-4">Linked Policy</h3>
+          <div class="flex items-center justify-between p-3 border border-card-border rounded-lg bg-white/5 mb-4">
+            <div><p class="text-sm font-medium text-white">Standard 4Y/1C</p><p class="text-xs text-label-gray mt-0.5">Version 2.1</p></div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/30 text-white">Active</span>
+          </div>
+          <button onclick="navigateTo('policies')" class="text-xs text-label-gray hover:text-white flex items-center gap-1 transition-colors">View Policy Details <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN: NEW GRANT — STEP 1
+     ════════════════════════════════════════════ -->
+<div class="screen" id="screen-grant-new">
+<main class="flex-1 ml-[260px] flex flex-col min-h-screen bg-dash-bg">
+  <header class="h-[70px] border-b border-card-border flex items-center justify-between px-10 sticky top-0 z-40 bg-dash-bg/95 backdrop-blur-sm">
+    <div class="flex items-center gap-2">
+      <span onclick="navigateTo('grants')" class="text-[12px] text-tertiary-gray hover:text-white cursor-pointer transition-colors">Grants</span>
+      <span class="text-[12px] text-tertiary-gray">/</span>
+      <span class="text-[12px] text-label-gray">New Grant</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <button class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span></button>
+      <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border"><img alt="Profile" class="w-full h-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ"/></div>
+    </div>
+  </header>
+  <div class="px-10 py-10 space-y-8 max-w-[1200px] mx-auto w-full">
+    <div class="flex items-end justify-between">
+      <div><h2 class="text-2xl font-semibold text-white">Create New Grant</h2><p class="text-label-gray mt-1 text-sm">Configure and issue a new stock option grant.</p></div>
+      <button onclick="navigateTo('grants')" class="border border-card-border text-white hover:bg-white/5 px-5 py-2 rounded-lg font-medium text-sm transition-all">Cancel</button>
+    </div>
+    <!-- Step indicator -->
+    <div class="relative py-4">
+      <div class="flex items-center justify-between relative z-10">
+        <div class="flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold shadow-[0_0_0_4px_#111111]">1</div><span class="text-sm font-medium text-white">Select Employee</span></div>
+        <div class="flex-1 h-px bg-tertiary-gray mx-4 relative top-[-14px]"></div>
+        <div class="flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full border border-tertiary-gray bg-dash-bg text-tertiary-gray flex items-center justify-center text-sm shadow-[0_0_0_4px_#111111]">2</div><span class="text-sm text-tertiary-gray">Grant Details</span></div>
+        <div class="flex-1 h-px bg-tertiary-gray mx-4 relative top-[-14px]"></div>
+        <div class="flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full border border-tertiary-gray bg-dash-bg text-tertiary-gray flex items-center justify-center text-sm shadow-[0_0_0_4px_#111111]">3</div><span class="text-sm text-tertiary-gray">Vesting Preview</span></div>
+        <div class="flex-1 h-px bg-tertiary-gray mx-4 relative top-[-14px]"></div>
+        <div class="flex flex-col items-center gap-2"><div class="w-8 h-8 rounded-full border border-tertiary-gray bg-dash-bg text-tertiary-gray flex items-center justify-center text-sm shadow-[0_0_0_4px_#111111]">4</div><span class="text-sm text-tertiary-gray">Review &amp; Submit</span></div>
+      </div>
+    </div>
+    <!-- Step 1 form card -->
+    <div class="bg-transparent border border-card-border rounded-card p-8 space-y-8">
+      <div class="space-y-4">
+        <label class="text-label-gray text-[11px] uppercase tracking-wider font-medium">Employee</label>
+        <div class="relative"><span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-tertiary-gray text-[20px]">search</span><input class="w-full bg-transparent border border-card-border rounded-xl h-[48px] pl-12 pr-4 text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all" placeholder="Search by name, ID, or email..." type="text"/></div>
+        <div class="space-y-1 mt-2">
+          <div class="flex items-center justify-between p-3 rounded-lg bg-white/5 border-l-2 border-white cursor-pointer">
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">AS</div><div><span class="text-sm text-white font-medium">Ananya Sharma</span><span class="block text-xs text-label-gray">Senior Engineer • EMP-202</span></div></div>
+            <span class="text-xs text-white flex items-center gap-1 font-medium bg-white/10 px-2 py-1 rounded">Selected <span class="material-symbols-outlined text-[14px]">check</span></span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 border-l-2 border-transparent cursor-pointer transition-colors">
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-tertiary-gray/40 flex items-center justify-center text-xs font-bold text-tertiary-gray">KS</div><div><span class="text-sm text-tertiary-gray">Karan Singh</span><span class="block text-xs text-tertiary-gray">Product Manager • EMP-491</span></div></div>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 border-l-2 border-transparent cursor-pointer transition-colors">
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-tertiary-gray/40 flex items-center justify-center text-xs font-bold text-tertiary-gray">VP</div><div><span class="text-sm text-tertiary-gray">Vikram Patel</span><span class="block text-xs text-tertiary-gray">VP of Sales • EMP-092</span></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Selected employee info strip -->
+      <div class="border-t border-b border-card-border py-6 space-y-4">
+        <div class="flex items-center gap-8">
+          <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold text-white border border-card-border">AS</div><div><h3 class="text-white font-medium">Ananya Sharma</h3><p class="text-xs text-label-gray">EMP-202 • Senior Engineer</p></div></div>
+          <div class="h-8 w-px bg-card-border"></div>
+          <div><p class="text-[10px] text-label-gray uppercase tracking-wider mb-1">Joined</p><p class="text-sm text-white">Mar 12, 2021</p></div>
+          <div class="h-8 w-px bg-card-border"></div>
+          <div><p class="text-[10px] text-label-gray uppercase tracking-wider mb-1">Active Grants</p><p class="text-sm text-white">2</p></div>
+        </div>
+        <div class="flex items-start gap-2 text-label-gray italic text-xs bg-white/5 p-3 rounded-lg border border-white/5"><span class="material-symbols-outlined text-[16px]">info</span><span>This employee already has 2 active grants. Review before proceeding.</span></div>
+      </div>
+      <!-- Policy selection -->
+      <div class="space-y-4">
+        <label class="text-label-gray text-[11px] uppercase tracking-wider font-medium">Vesting Policy</label>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="border-2 border-white rounded-xl p-4 cursor-pointer bg-white/5 relative"><div class="absolute top-3 right-3 w-5 h-5 bg-white rounded-full flex items-center justify-center"><span class="material-symbols-outlined text-black text-[14px] font-bold">check</span></div><h4 class="text-white font-medium text-sm mb-1">Standard 4Y/1C</h4><p class="text-xs text-label-gray mb-3">4 year vesting, 1 year cliff</p><div class="flex gap-2 text-[10px] text-label-gray"><span class="bg-black/40 px-2 py-1 rounded">Monthly</span><span class="bg-black/40 px-2 py-1 rounded">Default</span></div></div>
+          <div class="border border-card-border hover:border-white/40 rounded-xl p-4 cursor-pointer transition-colors"><h4 class="text-tertiary-gray font-medium text-sm mb-1">Advisory 2Y</h4><p class="text-xs text-tertiary-gray mb-3">2 year vesting, no cliff</p><div class="flex gap-2 text-[10px] text-tertiary-gray"><span class="bg-white/5 px-2 py-1 rounded">Quarterly</span></div></div>
+          <div class="border border-card-border hover:border-white/40 rounded-xl p-4 cursor-pointer transition-colors"><h4 class="text-tertiary-gray font-medium text-sm mb-1">Executive 4Y/Backloaded</h4><p class="text-xs text-tertiary-gray mb-3">10/20/30/40 split</p><div class="flex gap-2 text-[10px] text-tertiary-gray"><span class="bg-white/5 px-2 py-1 rounded">Annual</span></div></div>
+          <div class="border border-card-border rounded-xl p-4 opacity-40 cursor-not-allowed"><div class="flex justify-between items-start"><div><h4 class="text-tertiary-gray font-medium text-sm mb-1">Early Employee</h4><p class="text-xs text-tertiary-gray mb-3">Deprecated Policy</p></div><span class="text-[10px] border border-tertiary-gray text-tertiary-gray px-1.5 py-0.5 rounded uppercase">Archived</span></div></div>
+        </div>
+      </div>
+      <div class="pt-4 flex items-center justify-between">
+        <p class="text-xs text-tertiary-gray">* All fields required to proceed</p>
+        <button onclick="showToast('Grant Details step coming soon')" class="bg-white text-black hover:bg-gray-200 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg">Continue to Grant Details<span class="material-symbols-outlined text-[18px]">arrow_forward</span></button>
+      </div>
+    </div>
+    <!-- Locked step 2 -->
+    <div class="bg-transparent border border-dashed border-tertiary-gray rounded-card p-6 flex items-center justify-center gap-3 opacity-60">
+      <div class="w-10 h-10 rounded-full bg-tertiary-gray/20 flex items-center justify-center"><span class="material-symbols-outlined text-tertiary-gray text-[20px]">lock</span></div>
+      <div><span class="text-sm font-medium text-tertiary-gray">Step 2 — Grant Details</span><span class="block text-xs text-tertiary-gray">Complete Step 1 to unlock</span></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- VESTING -->
+<div class="screen" id="screen-vesting">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">schedule</span></div>
+    <h2>Vesting</h2>
+    <p>Paste your Vesting screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- ESOP POOL -->
+<div class="screen" id="screen-esop-pool">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">pie_chart</span></div>
+    <h2>ESOP Pool</h2>
+    <p>Paste your ESOP Pool screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- POLICIES -->
+<div class="screen" id="screen-policies">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">policy</span></div>
+    <h2>Policies</h2>
+    <p>Paste your Policies screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="screen" id="screen-reports">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">bar_chart</span></div>
+    <h2>Reports</h2>
+    <p>Paste your Reports screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- AUDIT LOG -->
+<div class="screen" id="screen-audit-log">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">history</span></div>
+    <h2>Audit Log</h2>
+    <p>Paste your Audit Log screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="screen-settings">
+  <div class="placeholder-screen">
+    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">settings</span></div>
+    <h2>Settings</h2>
+    <p>Paste your Settings screen code here to replace this placeholder.</p>
+    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     GRANT APPROVAL CONFIRMATION MODAL
+     ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-grant-approval">
+  <div style="width:520px; background:#1A1A1A; border:1px solid rgba(255,255,255,0.25); border-radius:16px; overflow:hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.6);">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.1);">
+      <h2 style="font-size:18px; font-weight:600; color:white;">Approve Grant</h2>
+      <button onclick="closeModal('modal-grant-approval')" style="background:none; border:none; color:#555; cursor:pointer; font-size:20px; line-height:1; padding:0;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#555'">
+        <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+      </button>
+    </div>
+    <!-- Grant summary -->
+    <div style="padding:20px 24px;">
+      <p style="font-size:10px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px;">You are approving</p>
+      <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1);">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="padding:2px 8px; background:rgba(255,255,255,0.1); border-radius:4px; font-size:11px; font-family:monospace; color:white;">GRT-009</span>
+          </div>
+          <span style="font-size:11px; color:rgba(255,255,255,0.6); background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.1);">Performance Grant</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px 24px; font-size:13px;">
+          <div><p style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Employee</p><p style="color:white; font-weight:500;">Tanya Verma</p><p style="font-size:11px; color:#555;">Finance Dept</p></div>
+          <div><p style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Quantity</p><p style="color:white; font-weight:500;">3,000 options</p><p style="font-size:11px; color:#555;">@ ₹18 strike price</p></div>
+          <div><p style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Policy</p><p style="color:rgba(255,255,255,0.8); font-size:12px;">Performance Grant v1.2</p></div>
+          <div><p style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Submitted By</p><div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;border-radius:50%;background:rgba(168,85,247,0.2);color:#c4b5fd;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;">P</div><p style="color:rgba(255,255,255,0.8); font-size:12px;">Priya Nair <span style="color:#555; margin-left:4px;">Oct 15</span></p></div></div>
+        </div>
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); display:flex; align-items:flex-start; gap:8px;">
+          <span class="material-symbols-outlined" style="font-size:14px; color:#555; margin-top:1px;">info</span>
+          <p style="font-size:11px; color:#888; line-height:1.4;">This approval will allocate <span style="color:white;">3,000 options</span> from available pool (2,80,000 remaining).</p>
+        </div>
+      </div>
+    </div>
+    <!-- Note textarea -->
+    <div style="padding:0 24px 20px;">
+      <label style="display:block; font-size:10px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">Approval Note (Optional)</label>
+      <textarea rows="3" placeholder="Add a comment regarding this approval..." style="width:100%; background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:10px 12px; color:white; font-size:13px; font-family:Inter,sans-serif; resize:none; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='white'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'"></textarea>
+      <p style="font-size:11px; color:#555; margin-top:6px; display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:12px;">visibility</span>This note will be recorded in the Audit Log</p>
+    </div>
+    <!-- Consequence strip -->
+    <div style="display:flex; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02);">
+      <div style="flex:1; padding:16px; border-right:1px solid rgba(255,255,255,0.1); border-left:2px solid white;">
+        <p style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:#888; margin-bottom:8px;">After approval</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;">
+          <li style="display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.9);"><span style="width:6px; height:6px; border-radius:50%; background:#22c55e; flex-shrink:0;"></span>Status becomes Active</li>
+          <li style="display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.9);"><span style="width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); flex-shrink:0;"></span>Vesting begins Oct 24, 2024</li>
+          <li style="display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.9);"><span style="width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); flex-shrink:0;"></span>Pool count updates immediately</li>
+        </ul>
+      </div>
+      <div style="flex:1; padding:16px;">
+        <p style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:#888; margin-bottom:8px;">Notifications sent to</p>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined" style="font-size:14px; color:#555;">person</span><span style="font-size:12px; color:rgba(255,255,255,0.8);">Tanya Verma (Recipient)</span></div>
+          <div style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined" style="font-size:14px; color:#555;">person</span><span style="font-size:12px; color:rgba(255,255,255,0.8);">Priya Nair (Submitter)</span></div>
+          <div style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined" style="font-size:14px; color:#555;">history</span><span style="font-size:12px; color:rgba(255,255,255,0.8);">System Audit Log</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:16px 24px; display:flex; align-items:center; justify-content:space-between; background:#1A1A1A;">
+      <span style="font-size:10px; color:#555; max-width:180px; line-height:1.4;">This action cannot be undone without Admin override</span>
+      <div style="display:flex; gap:12px;">
+        <button onclick="closeModal('modal-grant-approval')" style="padding:8px 16px; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background:none; color:white; font-size:14px; font-family:Inter,sans-serif; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">Cancel</button>
+        <button onclick="confirmApproval()" style="padding:8px 16px; background:white; border:none; border-radius:8px; color:black; font-size:14px; font-weight:700; font-family:Inter,sans-serif; cursor:pointer; box-shadow:0 0 15px rgba(255,255,255,0.15); transition:background 0.2s;" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background='white'">Confirm Approval</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+
+<!-- ════════════════════════════════════════════
+     PROTOTYPE NAVIGATION JAVASCRIPT
+     ════════════════════════════════════════════ -->
+<script>
+  // ── State ──
+  let currentScreen = 'dashboard';
+  let currentView = 'finance'; // 'finance' | 'hr'
+
+  // ── Screen router ──
+  function navigateTo(screenId) {
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+    });
+
+    // Show target screen
+    const target = document.getElementById('screen-' + screenId);
+    if (target) {
+      target.classList.add('active');
+      currentScreen = screenId;
+    }
+
+    // Update sidebar active state
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('nav-active');
+    });
+    const activeLink = document.querySelector(`[data-screen="${screenId}"]`);
+    if (activeLink) activeLink.classList.add('nav-active');
+
+    // Update sidebar role label
+    updateSidebarLabel();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+  }
+
+  // ── Grants tab switcher ──
+  function switchGrantsTab(tab) {
+    // Update tab buttons
+    const tabs = ['all','active','pending','draft','expired','forfeited'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('gtab-' + t);
+      if (!btn) return;
+      if (t === tab) {
+        btn.classList.add('text-white','border-b-2','border-white');
+        btn.classList.remove('text-label-gray');
+      } else {
+        btn.classList.remove('text-white','border-b-2','border-white');
+        btn.classList.add('text-label-gray');
+      }
+    });
+    // Show/hide views
+    const allView = document.getElementById('grants-view-all');
+    const pendingView = document.getElementById('grants-view-pending');
+    const otherView = document.getElementById('grants-view-other');
+    if (allView) allView.classList.add('hidden');
+    if (pendingView) pendingView.classList.add('hidden');
+    if (otherView) otherView.classList.add('hidden');
+    if (tab === 'all' && allView) allView.classList.remove('hidden');
+    else if (tab === 'pending' && pendingView) pendingView.classList.remove('hidden');
+    else if (otherView) {
+      otherView.classList.remove('hidden');
+      const label = document.getElementById('grants-other-label');
+      if (label) label.textContent = `No ${tab} grants to show`;
+    }
+    // Update breadcrumb
+    const crumb = document.getElementById('grants-breadcrumb');
+    const names = {all:'All Grants',active:'Active',pending:'Pending Approval',draft:'Draft',expired:'Expired',forfeited:'Forfeited'};
+    if (crumb) crumb.textContent = names[tab] || tab;
+  }
+
+  // ── Employee detail helper ──
+  function openEmployeeDetail() { navigateTo('employee-detail'); }
+
+  // ── Dashboard view switcher ──
+  function switchView(view) {
+    currentView = view;
+    const financeView = document.getElementById('view-finance');
+    const hrView = document.getElementById('view-hr');
+
+    if (view === 'finance') {
+      financeView.classList.remove('hidden');
+      financeView.classList.add('flex');
+      hrView.classList.add('hidden');
+      hrView.classList.remove('flex');
+    } else {
+      hrView.classList.remove('hidden');
+      hrView.classList.add('flex');
+      financeView.classList.add('hidden');
+      financeView.classList.remove('flex');
+    }
+    updateSidebarLabel();
+  }
+
+  function updateSidebarLabel() {
+    const label = document.getElementById('sidebar-role-label');
+    if (!label) return;
+    if (currentScreen === 'dashboard') {
+      label.textContent = currentView === 'finance' ? 'Founder View' : 'HR View';
+    } else {
+      const names = {
+        employees: 'Employees', grants: 'Grants', vesting: 'Vesting',
+        'esop-pool': 'ESOP Pool', policies: 'Policies', reports: 'Reports',
+        'audit-log': 'Audit Log', settings: 'Settings'
+      };
+      label.textContent = names[currentScreen] || '';
+    }
+  }
+
+  // ── Modal controls ──
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  function confirmApproval() {
+    closeModal('modal-grant-approval');
+    showToast('Grant GRT-009 approved successfully. Tanya Verma has been notified.');
+  }
+
+  // ── Toast notifications ──
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // ── Sidebar click delegation ──
+  document.querySelectorAll('.nav-link[data-screen]').forEach(link => {
+    link.addEventListener('click', () => {
+      const screenId = link.getAttribute('data-screen');
+      navigateTo(screenId);
+    });
+  });
+
+  // ── Close modal on overlay click ──
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // ── Keyboard: Escape closes modals ──
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+
+  // ── Init ──
+  navigateTo('dashboard');
+  switchView('finance');
+</script>
+
+</body>
+</html>
