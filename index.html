@@ -2472,22 +2472,167 @@
 
 <!-- AUDIT LOG -->
 <div class="screen" id="screen-audit-log">
-  <div class="placeholder-screen">
-    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">history</span></div>
-    <h2>Audit Log</h2>
-    <p>Paste your Audit Log screen code here to replace this placeholder.</p>
-    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+<main class="flex-1 ml-[260px] flex flex-col min-h-screen bg-dash-bg">
+  <header class="h-[70px]"><div></div></header>
+  <div class="p-8 space-y-8 w-full">
+    <div class="flex items-end justify-between">
+      <div class="space-y-1">
+        <h2 class="text-2xl font-semibold text-white">Audit Log</h2>
+        <p class="text-label-gray text-sm">Complete history of all system actions, changes, and approvals</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="showToast('Exporting log...')" class="px-4 py-2 rounded-lg border border-card-border text-white text-sm font-medium hover:bg-white/5 transition-colors">Export Log</button>
+        <button onclick="showToast('Downloading PDF...')" class="bg-white hover:bg-gray-200 text-black px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 shadow-lg"><span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>Download as PDF</button>
+      </div>
+    </div>
+    <div class="border border-card-border border-l-4 border-l-white bg-white/[0.02] p-4 rounded-r-lg flex items-center justify-between">
+      <div class="flex items-center gap-3"><span class="material-symbols-outlined text-white text-[20px]">info</span><span class="text-sm text-gray-300">All actions are recorded automatically. Sensitive changes may require dual-admin verification.</span></div>
+      <span class="text-xs text-tertiary-gray">Retention period: 7 years</span>
+    </div>
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 flex-1">
+          <div class="relative w-64"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[18px]">search</span><input class="w-full bg-transparent border border-card-border rounded-full py-1.5 pl-10 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all" placeholder="Search logs..." type="text"/></div>
+          <div class="h-8 w-px bg-card-border mx-1"></div>
+          <button onclick="showToast('Action Type filter')" class="px-3 py-1.5 rounded-lg border border-card-border text-gray-300 text-xs flex items-center gap-2 hover:bg-white/5">Action Type <span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+          <button onclick="showToast('Module filter')" class="px-3 py-1.5 rounded-lg border border-card-border text-gray-300 text-xs flex items-center gap-2 hover:bg-white/5">Module <span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+          <button onclick="showToast('User filter')" class="px-3 py-1.5 rounded-lg border border-card-border text-gray-300 text-xs flex items-center gap-2 hover:bg-white/5">User <span class="material-symbols-outlined text-[16px]">expand_more</span></button>
+          <button onclick="showToast('Date Range filter')" class="px-3 py-1.5 rounded-lg border border-card-border text-gray-300 text-xs flex items-center gap-2 hover:bg-white/5">Date Range <span class="material-symbols-outlined text-[16px]">calendar_today</span></button>
+        </div>
+        <div class="flex items-center gap-2"><span class="text-xs text-tertiary-gray">Sort:</span><button class="text-xs text-white flex items-center gap-1 font-medium">Newest First <span class="material-symbols-outlined text-[16px]">sort</span></button></div>
+      </div>
+      <div class="border-b border-card-border">
+        <div class="flex items-center gap-8">
+          <button class="pb-3 border-b-2 border-white text-white text-sm font-medium">All Activity</button>
+          <button onclick="showToast('Grants filter')" class="pb-3 border-b-2 border-transparent text-label-gray hover:text-white text-sm font-medium flex items-center gap-2">Grants <span class="bg-white/10 text-white text-[10px] px-1.5 py-0.5 rounded-full">24</span></button>
+          <button onclick="showToast('Employees filter')" class="pb-3 border-b-2 border-transparent text-label-gray hover:text-white text-sm font-medium flex items-center gap-2">Employees <span class="bg-white/10 text-white text-[10px] px-1.5 py-0.5 rounded-full">12</span></button>
+          <button onclick="showToast('Policies filter')" class="pb-3 border-b-2 border-transparent text-label-gray hover:text-white text-sm font-medium flex items-center gap-2">Policies <span class="bg-white/10 text-white text-[10px] px-1.5 py-0.5 rounded-full">5</span></button>
+          <button onclick="showToast('Exercises filter')" class="pb-3 border-b-2 border-transparent text-label-gray hover:text-white text-sm font-medium flex items-center gap-2">Exercises <span class="bg-white/10 text-white text-[10px] px-1.5 py-0.5 rounded-full">8</span></button>
+          <button onclick="showToast('Settings filter')" class="pb-3 border-b-2 border-transparent text-label-gray hover:text-white text-sm font-medium">Settings</button>
+        </div>
+      </div>
+    </div>
+    <div class="bg-transparent border border-card-border rounded-card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-card-border bg-white/[0.02]">
+              <th class="py-4 pl-6 pr-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-32">Timestamp</th>
+              <th class="py-4 px-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-48">User</th>
+              <th class="py-4 px-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-40">Action</th>
+              <th class="py-4 px-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-32">Module</th>
+              <th class="py-4 px-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-40">Affected Record</th>
+              <th class="py-4 px-4 text-[11px] font-semibold text-label-gray uppercase tracking-wider">Details</th>
+              <th class="py-4 pl-4 pr-6 text-[11px] font-semibold text-label-gray uppercase tracking-wider w-32 text-right">IP Address</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-card-border text-sm">
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 24, 14:32</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">S</div><span class="text-white">Siddharth Rao</span><span class="text-xs text-tertiary-gray">(Finance)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Grant Approved</span></td><td class="py-4 px-4 text-gray-400">Grants</td><td class="py-4 px-4 text-white font-mono text-xs">GRT-009</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Approved options grant for Engineering L3 cohort</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">192.168.1.42</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 24, 14:15</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">S</div><span class="text-white">Siddharth Rao</span><span class="text-xs text-tertiary-gray">(Finance)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Report Generated</span></td><td class="py-4 px-4 text-gray-400">Reports</td><td class="py-4 px-4 text-white font-mono text-xs">RPT-2023-Q3</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Exported Q3 Vesting Schedule (CSV)</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">192.168.1.42</td></tr>
+            <tr class="bg-white/[0.03] border-l-2 border-l-white"><td class="py-4 pl-6 pr-4 text-white font-medium whitespace-nowrap">Oct 24, 11:20</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-[10px] font-bold">A</div><span class="text-white font-medium">Admin</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-white text-white text-xs font-medium">Policy Updated</span></td><td class="py-4 px-4 text-white">Settings</td><td class="py-4 px-4 text-white font-mono text-xs">Standard 4Y/1C</td><td class="py-4 px-4 text-gray-300">Changed exercise window parameters</td><td class="py-4 pl-4 pr-6 text-gray-400 text-right font-mono text-xs">10.0.0.1</td></tr>
+            <tr class="bg-white/[0.03] border-l-2 border-l-white"><td class="py-2 px-6 pb-6" colspan="7"><div class="bg-[#0A0A0A] border border-card-border rounded-lg p-4 ml-12 mr-6"><div class="flex items-center gap-2 mb-3"><span class="text-xs font-mono text-tertiary-gray uppercase">Diff Viewer</span><span class="h-px flex-1 bg-card-border"></span></div><div class="grid grid-cols-2 gap-8 text-sm font-mono"><div><p class="text-xs text-tertiary-gray mb-2">Before (v2.1)</p><div class="text-gray-400 space-y-1"><p>"exercise_window": {</p><p class="pl-4">"post_termination": <span class="bg-red-900/30 text-red-300 px-1 rounded">"90 days"</span>,</p><p class="pl-4">"vesting_acceleration": "single_trigger"</p><p>}</p></div></div><div><p class="text-xs text-tertiary-gray mb-2">After (v2.2)</p><div class="text-gray-300 space-y-1"><p>"exercise_window": {</p><p class="pl-4">"post_termination": <span class="bg-green-900/30 text-green-300 px-1 rounded">"10 years"</span>,</p><p class="pl-4">"vesting_acceleration": "single_trigger"</p><p>}</p></div></div></div></div></td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 23, 16:45</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">J</div><span class="text-white">Jane Doe</span><span class="text-xs text-tertiary-gray">(HR)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Employee Added</span></td><td class="py-4 px-4 text-gray-400">Employees</td><td class="py-4 px-4 text-white font-mono text-xs">EMP-8821</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Added profile: Michael Chang (Engineering)</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">172.16.0.22</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 23, 09:15</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">S</div><span class="text-white">Siddharth Rao</span><span class="text-xs text-tertiary-gray">(Finance)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Grant Cancelled</span></td><td class="py-4 px-4 text-gray-400">Grants</td><td class="py-4 px-4 text-white font-mono text-xs">GRT-004</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Cancelled due to employee resignation before cliff</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">192.168.1.42</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors border-l-2 border-l-white bg-white/[0.01]"><td class="py-4 pl-6 pr-4 text-white font-medium whitespace-nowrap">Oct 22, 18:00</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center text-[10px] font-bold">A</div><span class="text-white font-medium">Admin</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-white text-white text-xs font-medium">Grant Voided</span></td><td class="py-4 px-4 text-white">Grants</td><td class="py-4 px-4 text-white font-mono text-xs">GRT-X01</td><td class="py-4 px-4 text-gray-300 truncate max-w-xs">Voided erroneous grant entry</td><td class="py-4 pl-4 pr-6 text-gray-400 text-right font-mono text-xs">10.0.0.1</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 22, 14:30</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">R</div><span class="text-white">Rahul V.</span><span class="text-xs text-tertiary-gray">(Legal)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Document Uploaded</span></td><td class="py-4 px-4 text-gray-400">Compliance</td><td class="py-4 px-4 text-white font-mono text-xs">DOC-221</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Uploaded signed board resolution</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">10.2.4.11</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors bg-white/[0.005]"><td class="py-4 pl-6 pr-4 text-tertiary-gray italic whitespace-nowrap">Oct 22, 00:00</td><td class="py-4 px-4"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary-gray">smart_toy</span><span class="text-gray-500 italic">System</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-500 italic">Vesting Processed</span></td><td class="py-4 px-4 text-gray-500 italic">Vesting</td><td class="py-4 px-4 text-gray-500 italic font-mono text-xs">BATCH-AUTO</td><td class="py-4 px-4 text-gray-500 italic truncate max-w-xs">38 employees vested (Monthly Schedule)</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs italic">localhost</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 21, 11:15</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">S</div><span class="text-white">Siddharth Rao</span><span class="text-xs text-tertiary-gray">(Finance)</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Login Success</span></td><td class="py-4 px-4 text-gray-400">Security</td><td class="py-4 px-4 text-white font-mono text-xs">—</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Successful login via 2FA</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">192.168.1.42</td></tr>
+            <tr class="hover:bg-white/[0.02] transition-colors"><td class="py-4 pl-6 pr-4 text-tertiary-gray whitespace-nowrap">Oct 21, 09:45</td><td class="py-4 px-4"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-tertiary-gray flex items-center justify-center text-[10px] text-white">A</div><span class="text-white">Admin</span></div></td><td class="py-4 px-4"><span class="px-2 py-0.5 rounded border border-card-border text-xs text-gray-300">Settings Changed</span></td><td class="py-4 px-4 text-gray-400">System</td><td class="py-4 px-4 text-white font-mono text-xs">Notification</td><td class="py-4 px-4 text-gray-400 truncate max-w-xs">Updated email templates for vesting alerts</td><td class="py-4 pl-4 pr-6 text-tertiary-gray text-right font-mono text-xs">10.0.0.1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-4 border-t border-card-border flex items-center justify-between">
+        <p class="text-xs text-tertiary-gray">Showing <span class="text-white">1–12</span> of <span class="text-white">486</span> entries</p>
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 rounded border border-card-border flex items-center justify-center text-tertiary-gray opacity-50 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+          <button class="w-8 h-8 rounded bg-white text-black font-medium text-xs flex items-center justify-center">1</button>
+          <button onclick="showToast('Page 2')" class="w-8 h-8 rounded border border-card-border text-tertiary-gray font-medium text-xs flex items-center justify-center hover:text-white">2</button>
+          <button onclick="showToast('Page 3')" class="w-8 h-8 rounded border border-card-border text-tertiary-gray font-medium text-xs flex items-center justify-center hover:text-white">3</button>
+          <span class="text-tertiary-gray text-xs px-1">...</span>
+          <button onclick="showToast('Page 40')" class="w-8 h-8 rounded border border-card-border text-tertiary-gray font-medium text-xs flex items-center justify-center hover:text-white">40</button>
+          <button onclick="showToast('Next page')" class="w-8 h-8 rounded border border-card-border flex items-center justify-center text-white hover:bg-white/10"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+        </div>
+      </div>
+    </div>
   </div>
+</main>
 </div>
 
 <!-- SETTINGS -->
 <div class="screen" id="screen-settings">
-  <div class="placeholder-screen">
-    <div class="placeholder-icon"><span class="material-symbols-outlined text-white text-2xl">settings</span></div>
-    <h2>Settings</h2>
-    <p>Paste your Settings screen code here to replace this placeholder.</p>
-    <button onclick="navigateTo('dashboard')" class="mt-4 px-4 py-2 border border-white/20 rounded-lg text-sm text-label-gray hover:text-white hover:border-white transition-colors">← Back to Dashboard</button>
+<main class="flex-1 ml-[260px] flex flex-col min-h-screen bg-dash-bg">
+  <header class="h-[70px]"><div></div></header>
+  <div class="flex flex-1" style="min-height:calc(100vh - 70px)">
+    <!-- Settings sub-nav -->
+    <aside class="w-[220px] border-r border-card-border py-8 flex-shrink-0 bg-dash-bg/50 overflow-y-auto sticky top-[70px] self-start" style="height:calc(100vh - 70px)">
+      <div class="space-y-8">
+        <div><h3 class="px-8 text-[11px] text-tertiary-gray font-bold uppercase tracking-widest mb-3">Account</h3><nav class="flex flex-col"><a onclick="showToast('Profile')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Profile</a><a onclick="showToast('Security')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Security</a><a onclick="showToast('Plan & Billing')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Plan &amp; Billing</a></nav></div>
+        <div><h3 class="px-8 text-[11px] text-tertiary-gray font-bold uppercase tracking-widest mb-3">Access</h3><nav class="flex flex-col"><a onclick="showToast('Team Members')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Team Members</a><a class="px-8 py-2 text-sm text-white bg-white/5 border-l-2 border-white block cursor-pointer">Role &amp; Permissions</a><a onclick="showToast('SSO Configuration')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">SSO Configuration</a></nav></div>
+        <div><h3 class="px-8 text-[11px] text-tertiary-gray font-bold uppercase tracking-widest mb-3">Notifications</h3><nav class="flex flex-col"><a onclick="showToast('Email Alerts')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Email Alerts</a><a onclick="showToast('In-App Notices')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">In-App Notices</a></nav></div>
+        <div><h3 class="px-8 text-[11px] text-tertiary-gray font-bold uppercase tracking-widest mb-3">Data</h3><nav class="flex flex-col"><a onclick="showToast('Import / Export')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Import / Export</a><a onclick="showToast('API Keys')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">API Keys</a></nav></div>
+        <div><h3 class="px-8 text-[11px] text-tertiary-gray font-bold uppercase tracking-widest mb-3">System</h3><nav class="flex flex-col"><a onclick="showToast('Integrations')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Integrations</a><a onclick="navigateTo('audit-log')" class="px-8 py-2 text-sm text-label-gray hover:text-white hover:bg-white/5 transition-colors block cursor-pointer">Audit Logs</a></nav></div>
+      </div>
+    </aside>
+    <!-- Main settings content -->
+    <div class="flex-1 overflow-y-auto px-8 py-8">
+      <div class="w-full space-y-8">
+        <div class="flex items-end justify-between">
+          <div><h2 class="text-2xl font-semibold text-white mb-1">Role &amp; Permissions</h2><p class="text-label-gray text-sm">Manage access levels and permissions for your team members.</p></div>
+          <button onclick="showToast('Add Custom Role coming soon')" class="border border-white/20 hover:border-white text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">add</span>Add Custom Role</button>
+        </div>
+        <!-- Role summary -->
+        <div class="bg-transparent border border-card-border rounded-card p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="space-y-4">
+            <div><h3 class="text-sm font-medium text-white">Assigned Users</h3><p class="text-xs text-label-gray mt-1">3 users currently assigned to this role.</p></div>
+            <div class="flex items-center gap-4">
+              <div class="flex -space-x-2"><div class="inline-flex h-8 w-8 rounded-full ring-2 ring-[#111] bg-gray-600 items-center justify-center text-xs">PN</div><div class="inline-flex h-8 w-8 rounded-full ring-2 ring-[#111] bg-gray-500 items-center justify-center text-xs">MJ</div><div class="inline-flex h-8 w-8 rounded-full ring-2 ring-[#111] bg-gray-400 items-center justify-center text-xs">KS</div></div>
+              <button onclick="showToast('Manage Users')" class="text-xs text-white underline decoration-white/30 hover:decoration-white">Manage Users</button>
+            </div>
+            <span class="px-2 py-0.5 rounded border border-card-border text-[10px] text-label-gray uppercase tracking-wider">System Role</span>
+          </div>
+          <div class="space-y-4 border-l border-card-border pl-8">
+            <div class="grid grid-cols-2 gap-y-4"><div><p class="text-[10px] text-tertiary-gray uppercase tracking-wider mb-1">Created On</p><p class="text-sm text-white">Sep 12, 2023</p></div><div><p class="text-[10px] text-tertiary-gray uppercase tracking-wider mb-1">Created By</p><p class="text-sm text-white">System Default</p></div></div>
+            <div class="space-y-2 pt-2">
+              <div class="flex items-center justify-between text-xs"><span class="text-label-gray">Can Approve Grants</span><span class="text-tertiary-gray">No</span></div>
+              <div class="flex items-center justify-between text-xs"><span class="text-label-gray">Can View Financials</span><span class="text-tertiary-gray">No</span></div>
+              <div class="flex items-center justify-between text-xs"><span class="text-label-gray">Can Export Data</span><span class="text-white">Yes</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- User assignments -->
+        <div class="bg-transparent border border-card-border rounded-card overflow-hidden">
+          <div class="px-6 py-4 border-b border-card-border flex justify-between items-center"><h3 class="text-sm font-medium text-white">User Assignments</h3><div class="relative w-56"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[16px]">search</span><input class="w-full bg-transparent border border-card-border rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white" placeholder="Search users..." type="text"/></div></div>
+          <table class="w-full text-left">
+            <thead class="bg-white/[0.02]"><tr class="text-xs text-label-gray"><th class="px-6 py-3 font-medium">User</th><th class="px-6 py-3 font-medium">Email</th><th class="px-6 py-3 font-medium">Role</th><th class="px-6 py-3 font-medium">Last Active</th><th class="px-6 py-3 font-medium text-right">Action</th></tr></thead>
+            <tbody class="divide-y divide-card-border text-sm">
+              <tr class="hover:bg-white/[0.02]"><td class="px-6 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs">PN</div><span class="text-white">Priya Nair</span></div></td><td class="px-6 py-3 text-label-gray">priya.n@techflow.inc</td><td class="px-6 py-3 text-white">HR Manager</td><td class="px-6 py-3 text-label-gray">2 hours ago</td><td class="px-6 py-3 text-right"><button onclick="showToast('Edit role: Priya Nair')" class="text-xs text-white hover:underline">Edit Role</button></td></tr>
+              <tr class="hover:bg-white/[0.02]"><td class="px-6 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs">MJ</div><span class="text-white">Meera Joshi</span></div></td><td class="px-6 py-3 text-label-gray">meera.j@techflow.inc</td><td class="px-6 py-3 text-white">HR Manager</td><td class="px-6 py-3 text-label-gray">Oct 23, 2023</td><td class="px-6 py-3 text-right"><button onclick="showToast('Edit role: Meera Joshi')" class="text-xs text-white hover:underline">Edit Role</button></td></tr>
+              <tr class="hover:bg-white/[0.02]"><td class="px-6 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center text-xs">AM</div><span class="text-white">Arun Mehta</span></div></td><td class="px-6 py-3 text-label-gray">arun.m@techflow.inc</td><td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded border border-card-border text-[10px] text-white font-medium uppercase tracking-wide">Super Admin</span></td><td class="px-6 py-3 text-label-gray">Just now</td><td class="px-6 py-3 text-right"><span class="text-xs text-tertiary-gray cursor-not-allowed">Locked</span></td></tr>
+              <tr class="hover:bg-white/[0.02]"><td class="px-6 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center text-xs">SR</div><span class="text-white">Siddharth Rao</span></div></td><td class="px-6 py-3 text-label-gray">sid.rao@techflow.inc</td><td class="px-6 py-3 text-white">Finance Manager</td><td class="px-6 py-3 text-label-gray">Yesterday</td><td class="px-6 py-3 text-right"><button onclick="showToast('Edit role: Siddharth Rao')" class="text-xs text-white hover:underline">Edit Role</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Permissions matrix -->
+        <div class="bg-transparent border border-card-border rounded-card overflow-hidden">
+          <div class="px-6 py-4 border-b border-card-border"><h3 class="text-sm font-medium text-white">Permissions Matrix</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead><tr class="border-b border-card-border text-xs text-label-gray"><th class="px-6 py-4 font-normal uppercase tracking-wider w-1/4">Module</th><th class="px-6 py-4 font-normal uppercase tracking-wider bg-white/5 text-white w-1/4">HR Manager</th><th class="px-6 py-4 font-normal uppercase tracking-wider w-1/4">Finance Manager</th><th class="px-6 py-4 font-normal uppercase tracking-wider w-1/4">View Only</th></tr></thead>
+              <tbody class="text-sm divide-y divide-card-border">
+                <tr><td class="px-6 py-3 text-white">Dashboard</td><td class="px-6 py-3 bg-white/[0.03] text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-label-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">visibility</span>Read Only</span></td></tr>
+                <tr><td class="px-6 py-3 text-white">Employees</td><td class="px-6 py-3 bg-white/[0.03] text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-label-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">visibility</span>Read Only</span></td><td class="px-6 py-3 text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td></tr>
+                <tr><td class="px-6 py-3 text-white">Grants</td><td class="px-6 py-3 bg-white/[0.03] text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">edit</span>Edit Only</span></td><td class="px-6 py-3 text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td></tr>
+                <tr><td class="px-6 py-3 text-white">Vesting</td><td class="px-6 py-3 bg-white/[0.03] text-label-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">visibility</span>Read Only</span></td><td class="px-6 py-3 text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td></tr>
+                <tr><td class="px-6 py-3 text-white">ESOP Pool</td><td class="px-6 py-3 bg-white/[0.03] text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td><td class="px-6 py-3 text-white"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">check</span>Full Access</span></td><td class="px-6 py-3 text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td></tr>
+                <tr><td class="px-6 py-3 text-white">Settings</td><td class="px-6 py-3 bg-white/[0.03] text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td><td class="px-6 py-3 text-label-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">visibility</span>Read Only</span></td><td class="px-6 py-3 text-tertiary-gray"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">close</span>No Access</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+</main>
 </div>
 
 
