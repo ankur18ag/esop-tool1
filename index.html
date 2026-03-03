@@ -75,7 +75,31 @@
   .nav-link.nav-active span { color: black !important; }
   .nav-link:not(.nav-active) { color: #888888; }
 
-  /* ── Modal overlay ── */
+  /* ── Global fixed topbar (overrides all per-screen headers) ── */
+  #global-topbar {
+    position: fixed;
+    top: 0; left: 260px; right: 0;
+    height: 70px;
+    z-index: 60;
+    background: rgba(17,17,17,0.97);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    backdrop-filter: blur(8px);
+  }
+  /* Hide all per-screen headers */
+  .screen header { display: none !important; }
+  /* Compensate for missing header height */
+  .screen > main,
+  .screen > div > main { padding-top: 70px; }
+  /* Special: report-preview has overflow:hidden layout */
+  #screen-report-preview > main { padding-top: 0; }
+  #screen-report-preview > main > .shrink-0:first-child { margin-top: 70px; }
+  /* Settings inner layout */
+  #screen-settings > main { padding-top: 70px; }
+
   .modal-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,0.72); z-index: 1000;
@@ -145,7 +169,28 @@
 </aside>
 
 <!-- ════════════════════════════════════════════
-     SCREEN: DASHBOARD — FINANCE / FOUNDER VIEW
+     GLOBAL TOPBAR — persistent across all screens
+     ════════════════════════════════════════════ -->
+<div id="global-topbar">
+  <div id="global-breadcrumb" class="flex items-center gap-1.5 text-xs text-label-gray min-w-0">
+    <span class="text-white text-sm font-medium">Dashboard</span>
+  </div>
+  <div class="flex items-center gap-4 shrink-0">
+    <div class="relative w-52">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-gray text-[17px]">search</span>
+      <input id="global-search" class="w-full bg-transparent border border-card-border rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-tertiary-gray focus:ring-1 focus:ring-white focus:border-white transition-all outline-none" placeholder="Search..." type="text"/>
+    </div>
+    <button onclick="showToast('No new notifications')" class="w-8 h-8 flex items-center justify-center rounded-full border border-card-border text-label-gray hover:text-white transition-colors relative">
+      <span class="material-symbols-outlined text-[20px]">notifications</span>
+      <span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span>
+    </button>
+    <div class="w-8 h-8 rounded-full bg-tertiary-gray overflow-hidden border border-card-border">
+      <img alt="Profile" class="w-full h-full object-cover grayscale opacity-80 hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe28Bis_URnd5KDiZRw14lPy7752y99yhoyRXbQkS8vawwmxcQg6uYO88qzYY9AVIJ7hofr2vzVxf2YX8k1iqcKP5m77EZP0Km3Ysg6P3yTRMKNT9UcD4vXLvDGATMBdzI3oHvCldjrnC2kU3zGdIIjKDgsVICbIp8nqOulx5Ecx5Ght7iXjnJk6EIUT53cD6hwinDOT3ITGMDBnRdnOqm9MCBuMvgGT_8Yfh569bObhUKotGljswqsOF7Lv8tMOuUZPzzST2HiQ">
+    </div>
+  </div>
+</div>
+
+
      ════════════════════════════════════════════ -->
 <div class="screen active" id="screen-dashboard">
   <div id="view-finance" class="flex-1 flex flex-col">
@@ -2274,7 +2319,7 @@
      SCREEN: REPORT PREVIEW — ESOP Pool Summary
      ════════════════════════════════════════════ -->
 <div class="screen" id="screen-report-preview">
-<main class="ml-[260px] flex flex-col bg-dash-bg" style="height:100vh; overflow:hidden;">
+<main class="ml-[260px] flex flex-col bg-dash-bg" style="height:100vh; overflow:hidden; padding-top:70px;">
   <header class="h-[70px] border-b border-card-border flex items-center justify-between px-8 shrink-0 bg-dash-bg/95 backdrop-blur-sm z-40">
     <div class="flex flex-col justify-center h-full">
       <div class="flex items-center gap-1 mb-1">
@@ -2530,30 +2575,42 @@
 
   // ── Screen router ──
   function navigateTo(screenId) {
-    // Hide all screens
-    document.querySelectorAll('.screen').forEach(s => {
-      s.classList.remove('active');
-    });
-
-    // Show target screen
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById('screen-' + screenId);
-    if (target) {
-      target.classList.add('active');
-      currentScreen = screenId;
-    }
-
-    // Update sidebar active state
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('nav-active');
-    });
-    const activeLink = document.querySelector(`[data-screen="${screenId}"]`);
+    if (target) { target.classList.add('active'); currentScreen = screenId; }
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('nav-active'));
+    const activeLink = document.querySelector('[data-screen="' + screenId + '"]');
     if (activeLink) activeLink.classList.add('nav-active');
-
-    // Update sidebar role label
+    updateBreadcrumb(screenId);
     updateSidebarLabel();
-
-    // Scroll to top
     window.scrollTo(0, 0);
+  }
+
+  function updateBreadcrumb(screenId) {
+    const bc = document.getElementById('global-breadcrumb');
+    if (!bc) return;
+    const sep = '<span class="material-symbols-outlined text-[14px] text-tertiary-gray" style="font-size:14px;vertical-align:middle">chevron_right</span>';
+    const lnk = (label, t) => '<span onclick="navigateTo(\'' + t + '\')" class="hover:text-white cursor-pointer transition-colors">' + label + '</span>';
+    const act = (label) => '<span class="text-white font-medium">' + label + '</span>';
+    const map = {
+      'dashboard':       act('Dashboard'),
+      'employees':       lnk('Employees','employees') + ' ' + sep + ' ' + act('All Employees'),
+      'employee-detail': lnk('Employees','employees') + ' ' + sep + ' ' + act('Ananya Sharma'),
+      'employee-add':    lnk('Employees','employees') + ' ' + sep + ' ' + act('Add Employee'),
+      'grants':          lnk('Grants','grants') + ' ' + sep + ' ' + act('All Grants'),
+      'grant-detail':    lnk('Grants','grants') + ' ' + sep + ' ' + act('GRT-001'),
+      'grant-new':       lnk('Grants','grants') + ' ' + sep + ' ' + act('New Grant'),
+      'vesting':         act('Vesting'),
+      'esop-pool':       act('ESOP Pool'),
+      'policies':        lnk('Policies','policies') + ' ' + sep + ' ' + act('All Policies'),
+      'policy-detail':   lnk('Policies','policies') + ' ' + sep + ' ' + act('Standard 4Y/1C'),
+      'policy-new':      lnk('Policies','policies') + ' ' + sep + ' ' + act('Create Policy'),
+      'reports':         act('Reports'),
+      'report-preview':  lnk('Reports','reports') + ' ' + sep + ' ' + act('ESOP Pool Summary'),
+      'audit-log':       act('Audit Log'),
+      'settings':        lnk('Settings','settings') + ' ' + sep + ' ' + act('Role & Permissions'),
+    };
+    bc.innerHTML = map[screenId] || act(screenId);
   }
 
   // ── Employee detail tab switcher ──
